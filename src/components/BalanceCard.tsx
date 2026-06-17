@@ -84,18 +84,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       setSwapError('');
       sound.play('confirm');
       
-      // Attempt actual swap, but handle testnet RPC issues
-      try {
-        await executeCeloToUsdtSwap(swapAmount);
-      } catch (executeErr: any) {
-        if (network === 'testnet' && (executeErr?.message?.includes('403') || executeErr?.message?.includes('network'))) {
-          // Gracefully simulate on testnet if it's struggling
-          console.warn('Mento testnet integration struggling, simulating successful swap visually');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
-          throw executeErr;
-        }
-      }
+      // Attempt actual swap
+      await executeCeloToUsdtSwap(swapAmount);
       
       sound.play('success');
       setShowSwap(false);
