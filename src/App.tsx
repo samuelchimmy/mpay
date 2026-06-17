@@ -282,49 +282,63 @@ export default function App() {
   };
 
   const handleFaucetClaim = async () => {
-    // Open testing stable coin faucet for Sepolia or Mento Swap
-    if (wallet.network === 'testnet') {
-      // Simulate one-click claim for better UX on testnet
+    if (wallet.network !== 'testnet') {
+      window.open("https://app.mento.org/", "_blank");
+      return;
+    }
+
+    if (!wallet.address) {
+      sound.play('error');
+      return;
+    }
+
+    try {
       sound.play('confirm');
 
-      // Simulate top-up
-      const topupUsdt = 100;
-      const topupCelo = 10;
+      const response = await fetch('/api/faucet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: wallet.address })
+      });
 
-      setBalance(prev => prev + topupUsdt);
-      setCeloBalance(prev => prev + topupCelo);
+      const data = await response.json();
 
-      setWallet(prev => ({
-        ...prev,
-        usdtBalance: prev.usdtBalance + topupUsdt,
-        celoBalance: prev.celoBalance + topupCelo
-      }));
+      if (!response.ok) {
+        throw new Error(data.error || 'Faucet request failed');
+      }
 
-      // Add a simulated transaction to history
+      // Add a record to transaction history
       const faucetTx: Transaction = {
         id: `faucet-${Date.now()}`,
-        recipientAddress: wallet.address || '0x...',
-        recipientName: 'Testnet Faucet',
-        moniTag: 'faucet',
-        amount: topupUsdt,
+        recipientAddress: wallet.address,
+        recipientName: 'Faucet Relayer',
+        moniTag: 'relayer',
+        amount: 0.2,
         timestamp: new Date().toISOString(),
         status: 'success',
-        txHash: '0x' + Math.random().toString(16).slice(2, 66),
+        txHash: data.txHash,
         network: 'testnet',
-        isSimulated: true,
+        isSimulated: false,
         isReceive: true
       };
 
       setTransactions(prev => [faucetTx, ...prev]);
+      sound.play('success');
 
-      // Still open the faucet in background as a fallback/informational
-      window.open("https://faucet.celo.org/celo-sepolia", "_blank");
-
+      // Refresh balances after a short delay for on-chain confirmation
       setTimeout(() => {
-        sound.play('success');
-      }, 1000);
-    } else {
-      window.open("https://app.mento.org/", "_blank");
+        handleRefreshBalances();
+      }, 3000);
+
+    } catch (err: any) {
+      console.error('Faucet error:', err);
+      sound.play('error');
+      // For developer awareness if private key is missing in local dev
+      if (err.message.includes('not configured')) {
+        alert("Faucet relayer not configured. Please add FAUCET_PRIVATE_KEY to your environment.");
+      } else {
+        alert(err.message);
+      }
     }
   };
 
