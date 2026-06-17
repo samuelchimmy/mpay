@@ -376,7 +376,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {network === 'testnet' && (
                   <motion.button
                     whileHover={{ scale: claiming ? 1.0 : 1.04 }}
@@ -387,14 +387,14 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                       handleClaim();
                     }}
                     disabled={claiming}
-                    className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                    className={`px-2.5 py-1 rounded-xl bg-minipay-green text-white font-display font-black text-[10px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
                       theme === 'dark'
                         ? 'border-white/20 hover:bg-minipay-green-hover'
                         : 'border-slate-900 hover:bg-minipay-green-hover'
                     } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
                   >
                     <Sparkles size={11} className={claiming ? "animate-spin" : ""} />
-                    <span>Claim Faucet</span>
+                    <span className="whitespace-nowrap">Claim Faucet</span>
                   </motion.button>
                 )}
 
@@ -406,14 +406,14 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                     sound.play('click');
                     setShowSwap(!showSwap);
                   }}
-                  className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                  className={`px-2.5 py-1 rounded-xl bg-minipay-green text-white font-display font-black text-[10px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
                     theme === 'dark'
                       ? 'border-white/20 hover:bg-minipay-green-hover'
                       : 'border-slate-900 hover:bg-minipay-green-hover'
                   }`}
                 >
                   <PlusCircle size={11} />
-                  <span>{showSwap ? "Cancel" : "Mento Swap"}</span>
+                  <span className="whitespace-nowrap">{showSwap ? "Cancel" : "Mento Swap"}</span>
                 </motion.button>
               </div>
             </div>
@@ -501,12 +501,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                                 sound.play('click');
                                 handleClaim();
                               }}
-                              className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[10px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                              className={`px-2.5 py-1 rounded-xl bg-minipay-green text-white font-display font-black text-[10px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
                                 theme === 'dark' ? 'border-white/20' : 'border-slate-900'
                               }`}
                             >
                               <Sparkles size={10} />
-                              <span>Claim Faucet</span>
+                              <span className="whitespace-nowrap">Claim Faucet</span>
                             </motion.button>
                           )}
                         </div>
