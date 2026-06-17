@@ -37,9 +37,7 @@ export default function App() {
     return saved ? parseFloat(saved) : 5.00;
   });
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('mpay_theme') as 'light' | 'dark') || 'light';
-  });
+  const theme = 'light' as 'light' | 'dark';
 
   // Start with completely empty transaction history - NO pre-seeded mock history items!
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -95,9 +93,7 @@ export default function App() {
     localStorage.setItem('mpay_muted', isMuted.toString());
   }, [isMuted]);
 
-  useEffect(() => {
-    localStorage.setItem('mpay_theme', theme);
-  }, [theme]);
+
 
   // Dynamic balance fetcher from Celo RPC
   const fetchLiveBalances = async (addr: string, net: NetworkType, force: boolean = false) => {
@@ -226,9 +222,7 @@ export default function App() {
     setIsMuted(nextMute);
   };
 
-  const handleToggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-  };
+
 
   const handleToggleSandbox = () => {
     setWallet(prev => {
@@ -409,9 +403,7 @@ export default function App() {
       {/* Top Main Navigation Header */}
       <Header 
         isMuted={isMuted}
-        theme={theme}
         onToggleMute={handleToggleMute}
-        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Workspace Layout (Two compact columns focusing entirely on transactions) */}
