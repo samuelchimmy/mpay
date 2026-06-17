@@ -284,7 +284,45 @@ export default function App() {
   const handleFaucetClaim = async () => {
     // Open testing stable coin faucet for Sepolia or Mento Swap
     if (wallet.network === 'testnet') {
+      // Simulate one-click claim for better UX on testnet
+      sound.play('confirm');
+
+      // Simulate top-up
+      const topupUsdt = 100;
+      const topupCelo = 10;
+
+      setBalance(prev => prev + topupUsdt);
+      setCeloBalance(prev => prev + topupCelo);
+
+      setWallet(prev => ({
+        ...prev,
+        usdtBalance: prev.usdtBalance + topupUsdt,
+        celoBalance: prev.celoBalance + topupCelo
+      }));
+
+      // Add a simulated transaction to history
+      const faucetTx: Transaction = {
+        id: `faucet-${Date.now()}`,
+        recipientAddress: wallet.address || '0x...',
+        recipientName: 'Testnet Faucet',
+        moniTag: 'faucet',
+        amount: topupUsdt,
+        timestamp: new Date().toISOString(),
+        status: 'success',
+        txHash: '0x' + Math.random().toString(16).slice(2, 66),
+        network: 'testnet',
+        isSimulated: true,
+        isReceive: true
+      };
+
+      setTransactions(prev => [faucetTx, ...prev]);
+
+      // Still open the faucet in background as a fallback/informational
       window.open("https://faucet.celo.org/celo-sepolia", "_blank");
+
+      setTimeout(() => {
+        sound.play('success');
+      }, 1000);
     } else {
       window.open("https://app.mento.org/", "_blank");
     }
