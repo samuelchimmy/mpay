@@ -49,10 +49,10 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   };
 
   return (
-    <div className={`w-full rounded-3xl p-6 shadow-xl transition-all border ${
+    <div className={`w-full rounded-3xl p-6 transition-all border-2 ${
       theme === 'dark'
-        ? 'bg-gradient-to-br from-minipay-slate to-slate-900 border-gray-800 shadow-black/30'
-        : 'bg-white border-gray-100 shadow-gray-200/50'
+        ? 'bg-gradient-to-br from-minipay-slate to-slate-900 border-gray-800 shadow-2xl'
+        : 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
     }`} id="mpay-recent-txs">
       
       {/* Title */}
@@ -88,10 +88,10 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             value={search}
             onChange={handleSearchChange}
             placeholder="Search address or dollar quantity..."
-            className={`w-full rounded-xl py-2.5 px-3.5 pl-9 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-minipay-green transition-all ${
+            className={`w-full rounded-xl py-2.5 px-3.5 pl-9 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-minipay-green transition-all border-2 ${
               theme === 'dark'
                 ? 'bg-gray-850 border-gray-800 text-white placeholder-gray-600'
-                : 'bg-gray-50 border-gray-150 text-gray-900 placeholder-gray-400 focus:bg-white'
+                : 'bg-white border-slate-900 text-slate-900 placeholder-gray-400 focus:bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
             }`}
           />
           <Search size={13} className="absolute left-3 text-gray-400" />
@@ -120,8 +120,15 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             const isFailed = tx.status === 'failed';
 
             return (
-              <div
+              <motion.div
                 key={tx.id}
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => handleTxClick(tx)}
                 className={`w-full text-left rounded-2xl p-3 flex items-center justify-between transition-all border cursor-pointer ${
                   theme === 'dark'
@@ -143,10 +150,10 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     <span className={`text-xs font-black truncate leading-tight ${
                       theme === 'dark' ? 'text-white' : 'text-gray-950'
                     }`}>
-                      {tx.recipientName}
+                      {tx.recipientName.startsWith('0x') ? formatAddress(tx.recipientName) : tx.recipientName}
                     </span>
                     <div className="flex items-center gap-1.5 text-[9px] font-mono text-gray-400 mt-1 select-none">
-                      <span>{tx.moniTag}</span>
+                      <span>{tx.moniTag.startsWith('0x') ? formatAddress(tx.moniTag) : tx.moniTag}</span>
                       <span>•</span>
                       <span>{tx.timestamp.split('T')[1]?.substring(0, 5) || tx.timestamp}</span>
                     </div>
@@ -170,7 +177,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     <span>{tx.status}</span>
                   </span>
                 </div>
-              </div>
+              </motion.div>
             );
           })
         )}
@@ -221,7 +228,9 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
               }`}>
                 <div className="flex justify-between items-center pb-2 border-b border-gray-400/10">
                   <span className="text-gray-400">Recipient:</span>
-                  <span className="font-bold truncate max-w-[170px]">{selectedTx.recipientName} ({selectedTx.moniTag})</span>
+                  <span className="font-bold truncate max-w-[170px]">
+                    {selectedTx.recipientName.startsWith('0x') ? formatAddress(selectedTx.recipientName) : selectedTx.recipientName}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center pb-2 border-b border-gray-400/10">

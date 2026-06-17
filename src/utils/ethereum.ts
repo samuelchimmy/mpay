@@ -71,10 +71,7 @@ export async function getWalletNetwork(): Promise<NetworkType> {
   if (!eth) return 'mainnet';
   
   try {
-    const chainId = await eth.request({ method: 'eth_blockNumber' }) 
-      ? await eth.request({ method: 'eth_chainId' })
-      : null;
-    
+    const chainId = await eth.request({ method: 'eth_chainId' });
     if (chainId === CELO_ALFAJORES_CHAIN_ID) {
       return 'testnet';
     }
@@ -82,6 +79,63 @@ export async function getWalletNetwork(): Promise<NetworkType> {
     console.warn("Could not retrieve chain ID, default to mainnet", e);
   }
   return 'mainnet';
+}
+
+/**
+ * Queries native CELO balance of an address on-chain.
+ */
+export async function getNativeCeloBalance(address: string): Promise<number> {
+  const eth = await getInjectedEthereum();
+  if (!eth) return 0;
+  try {
+    const rawBalHex = await eth.request({
+      method: 'eth_getBalance',
+      params: [address, 'latest']
+    });
+    if (rawBalHex) {
+      const wei = parseInt(rawBalHex, 16);
+      return isNaN(wei) ? 0 : wei / 1e18;
+    }
+  } catch (e) {
+    console.error("Failed to fetch CELO balance", e);
+  }
+  return 0;
+}
+
+/**
+ * Queries USDT balance of an address on-chain.
+ */
+export async function getUsdtBalance(address: string, network: NetworkType): Promise<number> {
+  const eth = await getInjectedEthereum();
+  if (!eth) return 0;
+  
+  const tokenContract = network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
+  
+  // Selector for balanceOf(address) is 0x70a08231
+  // Followed by 32 byte padded address
+  const cleanAddr = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+  const data = '0x70a08231' + cleanAddr;
+  
+  try {
+    const balanceHex = await eth.request({
+      method: 'eth_call',
+      params: [
+        {
+          to: tokenContract,
+          data: data
+        },
+        'latest'
+      ]
+    });
+    if (balanceHex && balanceHex !== '0x') {
+      const rawInt = BigInt(balanceHex);
+      // USDT on Celo is typically 6 decimals
+      return Number(rawInt) / 1e6;
+    }
+  } catch (e) {
+    console.error("Failed to fetch USDT token balance", e);
+  }
+  return 0;
 }
 
 /**

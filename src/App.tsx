@@ -8,8 +8,7 @@ import { Header } from './components/Header';
 import { BalanceCard } from './components/BalanceCard';
 import { SendForm } from './components/SendForm';
 import { RecentTransactions } from './components/RecentTransactions';
-import { Contact, Transaction, NetworkType, WalletState } from './types';
-import { DEFAULT_CONTACTS } from './data/mockContacts';
+import { Transaction, NetworkType, WalletState } from './types';
 import { sound } from './utils/sounds';
 import { 
   getInjectedEthereum, 
@@ -18,83 +17,60 @@ import {
   getWalletNetwork, 
   switchOrAddCeloNetwork,
   encodeERC20Transfer,
+  getNativeCeloBalance,
+  getUsdtBalance,
   USDT_ADDRESSES
 } from './utils/ethereum';
-import { HelpCircle, Sparkles, TrendingUp, Award, Check, ArrowRight, ShieldCheck, Zap, Info } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  // --- Persistent States from LocalStorage ---
+  // --- Core States ---
+  // Default values used when wallet is not connected or in sandbox demo mode
   const [balance, setBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_usdt_balance');
-    return saved ? parseFloat(saved) : 650.00; // default initial balance
+    return saved ? parseFloat(saved) : 100.00;
   });
   
   const [celoBalance, setCeloBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_celo_balance');
-    return saved ? parseFloat(saved) : 12.4503; // default gas balance
+    return saved ? parseFloat(saved) : 5.00;
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('mpay_theme') as 'light' | 'dark') || 'light';
   });
 
+  // Start with completely empty transaction history - NO pre-seeded mock history items!
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem('mpay_transactions');
     try {
       if (saved) return JSON.parse(saved);
     } catch (e) {
-      console.error("Failed to parse transactions, reset standard", e);
+      console.error("Failed to parse transactions", e);
     }
-    return [
-      {
-        id: 'tx-init-1',
-        recipientAddress: '0x9965503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d',
-        recipientName: 'Samuel Chimm',
-        moniTag: '@celo_samuel',
-        amount: 25.00,
-        timestamp: new Date(Date.now() - 3600000 * 2.5).toISOString(),
-        status: 'success',
-        txHash: '0xae41a9bc97501a3bd9601d3bd849af567b45f92271c778e35fbb9ee503043211',
-        network: 'mainnet',
-        isSimulated: true
-      },
-      {
-        id: 'tx-init-2',
-        recipientAddress: '0x4300430043004300430043004300430043004300',
-        recipientName: 'Celo Eco Fund',
-        moniTag: '@celo_eco',
-        amount: 10.00,
-        timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
-        status: 'success',
-        txHash: '0x3211ab9bc97501a3bd9601d3bd849af567b45f92271c778e35fbb9ee50304ae41',
-        network: 'mainnet',
-        isSimulated: true
-      }
-    ];
+    return [];
   });
 
   const [wallet, setWallet] = useState<WalletState>(() => {
     return {
-      address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
-      network: 'mainnet',
+      address: null,
+      network: 'testnet', // Default to testnet as requested
       usdtBalance: 0,
       celoBalance: 0,
-      isSandbox: true, // Default to true so standard reviewers without web3 injected extensions can test
-      status: 'connected'
+      isSandbox: true, // Sandbox mode enabled by default until a client connects
+      status: 'disconnected'
     };
   });
 
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('mpay_muted') === 'true';
   });
-
-  const [contacts] = useState<Contact[]>(DEFAULT_CONTACTS);
   
-  // High fidelity trigger state for transaction success feedback screen
+  // Confirmed payment modal
   const [lastSentTx, setLastSentTx] = useState<{ amount: number; nameOrTag: string } | null>(null);
 
-  // --- Synchronization & Side Effects ---
+  // --- Synchronization & Storage ---
   useEffect(() => {
     localStorage.setItem('mpay_usdt_balance', balance.toString());
   }, [balance]);
@@ -115,6 +91,18 @@ export default function App() {
     localStorage.setItem('mpay_theme', theme);
   }, [theme]);
 
+  // Dynamic balance fetcher from Celo RPC
+  const fetchLiveBalances = async (addr: string, net: NetworkType) => {
+    try {
+      const uBal = await getUsdtBalance(addr, net);
+      const cBal = await getNativeCeloBalance(addr);
+      setBalance(uBal);
+      setCeloBalance(cBal);
+    } catch (e) {
+      console.error("Failed to query Celo ERC-20 token contract balances", e);
+    }
+  };
+
   // Attempt auto-connecting real wallet if injected, automatically toggling sandbox
   useEffect(() => {
     const initWeb3Check = async () => {
@@ -123,14 +111,37 @@ export default function App() {
         const addr = await getConnectedAddress();
         if (addr) {
           const net = await getWalletNetwork();
-          setWallet(prev => ({
-            ...prev,
+          setWallet({
             address: addr,
             network: net,
-            isSandbox: false, // Turn off sandbox if real address exists
-            status: 'connected'
-          }));
+            isSandbox: false,
+            status: 'connected',
+            usdtBalance: 0,
+            celoBalance: 0
+          });
+          // Load real live connected wallet balances
+          await fetchLiveBalances(addr, net);
+        } else {
+          // Preset clean sandbox configuration for demo context
+          setWallet({
+            address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d", // Demo tag
+            network: 'testnet',
+            isSandbox: true,
+            status: 'connected',
+            usdtBalance: 100,
+            celoBalance: 5
+          });
         }
+      } else {
+        // Fallback clean sandbox configurations
+        setWallet({
+          address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
+          network: 'testnet',
+          isSandbox: true,
+          status: 'connected',
+          usdtBalance: 108,
+          celoBalance: 5
+        });
       }
     };
     initWeb3Check();
@@ -153,22 +164,28 @@ export default function App() {
     };
   }, []);
 
-  const handleAccountsChanged = (accounts: Array<string>) => {
+  const handleAccountsChanged = async (accounts: Array<string>) => {
     if (accounts.length > 0) {
+      const eth = await getInjectedEthereum();
+      const rawNet = eth ? await getWalletNetwork() : 'testnet' as NetworkType;
       setWallet(prev => ({
         ...prev,
         address: accounts[0],
         status: 'connected',
+        network: rawNet,
         isSandbox: false
       }));
+      await fetchLiveBalances(accounts[0], rawNet);
       sound.play('confirm');
     } else {
-      setWallet(prev => ({
-        ...prev,
-        address: null,
-        status: 'disconnected',
-        isSandbox: true
-      }));
+      setWallet({
+        address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
+        network: 'testnet',
+        isSandbox: true,
+        status: 'connected',
+        usdtBalance: 100,
+        celoBalance: 5
+      });
     }
   };
 
@@ -178,6 +195,9 @@ export default function App() {
       ...prev,
       network: net
     }));
+    if (wallet.address && !wallet.isSandbox) {
+      await fetchLiveBalances(wallet.address, net);
+    }
     sound.play('woosh');
   };
 
@@ -194,16 +214,11 @@ export default function App() {
   const handleToggleSandbox = () => {
     setWallet(prev => {
       const nextSandbox = !prev.isSandbox;
-      let nextAddress = nextSandbox ? null : prev.address;
-      let nextStatus = nextSandbox ? 'disconnected' : prev.status;
+      let nextAddress = nextSandbox ? "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d" : prev.address;
+      let nextStatus = nextSandbox ? 'connected' : prev.status;
       
-      // If turning off sandbox, suggest connecting real wallet
-      if (!nextSandbox && !prev.address) {
+      if (!nextSandbox) {
         setTimeout(() => connectWeb3Wallet(), 150);
-      } else if (nextSandbox) {
-        // Preset beautiful mock sandbox address
-        nextAddress = "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d";
-        nextStatus = 'connected';
       }
 
       return {
@@ -220,22 +235,25 @@ export default function App() {
     const addr = await connectInjectedWallet();
     if (addr) {
       const net = await getWalletNetwork();
-      setWallet(prev => ({
-        ...prev,
+      setWallet({
         address: addr,
         network: net,
         isSandbox: false,
-        status: 'connected'
-      }));
+        status: 'connected',
+        usdtBalance: 0,
+        celoBalance: 0
+      });
+      await fetchLiveBalances(addr, net);
       sound.play('success');
     } else {
-      // Revert key state
-      setWallet(prev => ({
-        ...prev,
-        status: 'connected',
+      setWallet({
+        address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
+        network: 'testnet',
         isSandbox: true,
-        address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d" // Return to mock address in Demo Mode
-      }));
+        status: 'connected',
+        usdtBalance: 100,
+        celoBalance: 5
+      });
       sound.play('error');
     }
   };
@@ -246,23 +264,30 @@ export default function App() {
       return;
     }
 
-    // Try real Metamask network switch
     const ok = await switchOrAddCeloNetwork(network);
     if (ok) {
       setWallet(prev => ({ ...prev, network }));
+      if (wallet.address) {
+        await fetchLiveBalances(wallet.address, network);
+      }
     }
   };
 
-  const handleFaucetClaim = () => {
-    // Top up standard stable USDT and mock CELO gas
-    setBalance(prev => prev + 100.00);
-    setCeloBalance(prev => prev + 0.5);
+  const handleFaucetClaim = async () => {
+    if (wallet.isSandbox) {
+      setBalance(prev => prev + 100.00);
+      setCeloBalance(prev => prev + 0.5);
+    } else {
+      // Direct linking of user guidelines for testnet faucet
+      window.open("https://faucet.celo.org/alfajores", "_blank");
+    }
   };
 
-  const handleRefreshBalances = () => {
-    // Simulates dynamic blockchain query update
-    setBalance(prev => prev);
-    setCeloBalance(prev => prev);
+  const handleRefreshBalances = async () => {
+    sound.play('click');
+    if (wallet.address && !wallet.isSandbox) {
+      await fetchLiveBalances(wallet.address, wallet.network);
+    }
   };
 
   const handleClearHistory = () => {
@@ -271,22 +296,18 @@ export default function App() {
 
   const handleSendTransaction = async (recipientAddress: string, amount: number, moniTag: string): Promise<boolean> => {
     if (wallet.isSandbox) {
-      // Simulate sandbox on-chain delay
       return new Promise((resolve) => {
         setTimeout(() => {
-          // Subtract local balance
-          setBalance(prev => prev - amount);
-          // Small simulated gas cost deduction of CELO
+          setBalance(prev => Math.max(0, prev - amount));
           setCeloBalance(prev => Math.max(0.0001, prev - 0.002));
 
-          // Generate randomized real-looking transactional hash
           const rHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
           
           const newTx: Transaction = {
             id: `tx-${Date.now()}`,
             recipientAddress,
-            recipientName: moniTag.startsWith('@') ? moniTag.replace('@', '') : 'Hex Address',
-            moniTag,
+            recipientName: recipientAddress,
+            moniTag: recipientAddress,
             amount,
             timestamp: new Date().toISOString(),
             status: 'success',
@@ -296,13 +317,13 @@ export default function App() {
           };
 
           setTransactions(prev => [newTx, ...prev]);
-          setLastSentTx({ amount, nameOrTag: moniTag });
+          setLastSentTx({ amount, nameOrTag: recipientAddress });
           resolve(true);
         }, 1500);
       });
     }
 
-    // Real on-chain injected transaction implementation!
+    // Real Celo onchain transaction execution
     const eth = await getInjectedEthereum();
     if (!eth || !wallet.address) {
       return false;
@@ -318,18 +339,17 @@ export default function App() {
           from: wallet.address,
           to: usdtContractAddress,
           data: dataPayload,
-          gas: '0x2625a0', // standard limits
+          gas: '0x2625a0',
         }]
       });
 
       if (txHash) {
-        // Success
-        setBalance(prev => prev - amount);
+        // Optimistically record the tx locally immediately
         const newTx: Transaction = {
           id: `tx-${Date.now()}`,
           recipientAddress,
-          recipientName: moniTag.startsWith('@') ? moniTag.replace('@', '') : 'Celo Address Recipient',
-          moniTag,
+          recipientName: recipientAddress,
+          moniTag: recipientAddress,
           amount,
           timestamp: new Date().toISOString(),
           status: 'success',
@@ -339,24 +359,25 @@ export default function App() {
         };
 
         setTransactions(prev => [newTx, ...prev]);
-        setLastSentTx({ amount, nameOrTag: moniTag });
+        setLastSentTx({ amount, nameOrTag: recipientAddress });
+        
+        // Refresh balances after brief dispatch threshold
+        setTimeout(() => {
+          if (wallet.address) {
+            fetchLiveBalances(wallet.address, wallet.network);
+          }
+        }, 3000);
+
         return true;
       }
     } catch (e) {
-      console.error("Metamask request rejected or crashed", e);
+      console.error("User rejected transfer signature request", e);
     }
     return false;
   };
 
-  // Compute neat statistics
-  const totalSent = transactions
-    .filter(tx => tx.status === 'success')
-    .reduce((acc, current) => acc + current.amount, 0);
-
-  const txCount = transactions.filter(tx => tx.status === 'success').length;
-
   return (
-    <div className={`min-h-screen transition-colors duration-300 font-sans flex flex-col items-center justify-start ${
+    <div className={`min-h-screen transition-colors duration-300 font-sans flex flex-col items-center justify-start pb-12 ${
       theme === 'dark' 
         ? 'minipay-bg-gradient-dark text-white' 
         : 'minipay-bg-gradient-light text-gray-900'
@@ -364,56 +385,18 @@ export default function App() {
       
       {/* Top Main Navigation Header */}
       <Header 
-        address={wallet.address || (wallet.isSandbox ? "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d" : null)}
-        network={wallet.network}
-        isSandbox={wallet.isSandbox}
         isMuted={isMuted}
         theme={theme}
         onToggleMute={handleToggleMute}
-        onToggleSandbox={handleToggleSandbox}
-        onConnect={connectWeb3Wallet}
-        onSwitchNetwork={handleSwitchNetwork}
         onToggleTheme={handleToggleTheme}
       />
 
-      {/* Main Container Wrapper - Modernized multi-column responsive workspace */}
-      <div className="w-full max-w-7xl px-4 sm:px-6 md:px-8 py-8 flex flex-col lg:flex-row gap-8 z-10">
+      {/* Main Workspace Layout (Two compact columns focusing entirely on transactions) */}
+      <div className="w-full max-w-5xl px-4 sm:px-6 py-6 flex flex-col md:flex-row gap-6 z-10 mt-2">
         
-        {/* LEFT COLUMN: Account, Balances, & Send Actions */}
-        <div className="flex-1 flex flex-col gap-6 w-full lg:max-w-xl">
-          
-          {/* Welcome Alert Card */}
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`rounded-3xl p-6 border transition-all relative overflow-hidden select-none flex flex-col gap-1.5 ${
-              theme === 'dark'
-                ? 'bg-gradient-to-br from-[#0c1f16] to-[#040e0a] border-emerald-950/40 shadow-xl'
-                : 'bg-gradient-to-br from-emerald-50/70 to-white border-emerald-100/50 shadow-sm'
-            }`}
-          >
-            <div className="absolute right-0 bottom-0 bg-minipay-green/5 w-32 h-32 rounded-full filter blur-2xl pointer-events-none" />
-            
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                theme === 'dark' ? 'bg-minipay-green/20 text-minipay-emerald' : 'bg-emerald-100 text-emerald-800'
-              }`}>
-                SYSTEM READY
-              </span>
-              <Sparkles size={11} className="text-minipay-emerald animate-pulse" />
-            </div>
-            
-            <h2 className="font-display font-extrabold text-base tracking-tight mt-1">
-              USDT minipay super module is active
-            </h2>
-            <p className={`text-xs leading-relaxed mt-1 ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-650'
-            }`}>
-              mPay facilitates lightning-speed USDT payments with zero gas latency. Transfer directly to EVM addresses or clean user tags. Connect with metamask or try sandbox.
-            </p>
-          </motion.div>
-
-          {/* Account stablecoin balances section */}
+        {/* LEFT COLUMN: Balances & Core Send Action */}
+        <div className="flex-1 flex flex-col gap-6 w-full">
+          {/* Native/Stable Balance details */}
           <BalanceCard 
             usdtBalance={balance}
             celoBalance={celoBalance}
@@ -423,167 +406,116 @@ export default function App() {
             theme={theme}
             onFaucetClaim={handleFaucetClaim}
             onRefreshBalances={handleRefreshBalances}
+            onToggleSandbox={handleToggleSandbox}
+            onSwitchNetwork={handleSwitchNetwork}
+            onConnect={connectWeb3Wallet}
           />
 
-          {/* Payment form segment */}
+          {/* Secure Transfer engine inputs */}
           <SendForm 
-            contacts={contacts}
             balance={balance}
             theme={theme}
             onSend={handleSendTransaction}
           />
-
         </div>
 
-        {/* RIGHT COLUMN: Ledger Activity log, statistics, dApp guidelines */}
+        {/* RIGHT COLUMN: Streamlined clean transaction ledger */}
         <div className="flex-1 flex flex-col gap-6 w-full">
-          
-          {/* Activity ledger history log */}
           <RecentTransactions 
             transactions={transactions}
             theme={theme}
             onClearHistory={handleClearHistory}
           />
-
-          {/* Live Metrics card */}
-          <div className={`rounded-3xl p-6 border transition-all ${
-            theme === 'dark'
-              ? 'bg-minipay-slate/40 border-gray-800'
-              : 'bg-white border-gray-100 shadow-sm shadow-gray-200/40'
-          }`}>
-            <h4 className={`font-display font-black text-xs uppercase tracking-widest flex items-center gap-1.5 mb-4 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
-              <TrendingUp size={14} className="text-minipay-emerald" />
-              <span>Real-time Ecosystem Metrics</span>
-            </h4>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className={`border rounded-2xl p-4 flex flex-col gap-1 transition-all ${
-                theme === 'dark' ? 'bg-gray-850/50 border-gray-800' : 'bg-gray-50 border-gray-150'
-              }`}>
-                <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${
-                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                }`}>Total Volume Dispensed</span>
-                <span className={`font-display font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>
-                  ${totalSent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              
-              <div className={`border rounded-2xl p-4 flex flex-col gap-1 transition-all ${
-                theme === 'dark' ? 'bg-gray-850/50 border-gray-800' : 'bg-gray-50 border-gray-150'
-              }`}>
-                <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${
-                  theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                }`}>Succesful blocks</span>
-                <span className={`font-display font-black text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-950'}`}>
-                  {txCount} blocks
-                </span>
-              </div>
-            </div>
-
-            <div className={`mt-5 p-4 rounded-2xl border flex items-center gap-3 text-xs leading-relaxed ${
-              theme === 'dark'
-                ? 'bg-[#0a1811] border-emerald-950/60 text-emerald-400'
-                : 'bg-emerald-500/[0.03] border-emerald-100 text-emerald-800'
-            }`}>
-              <ShieldCheck size={18} className="text-minipay-emerald flex-shrink-0" />
-              <p className="font-mono text-[10.5px]">
-                <strong>Gas Free UX:</strong> Transactions automatically execute with negligible gas fees sponsored by MiniPay on behalf of consumers.
-              </p>
-            </div>
-          </div>
-
-          {/* Quick FAQ / Specs section */}
-          <div className={`rounded-3xl p-6 border transition-all ${
-            theme === 'dark'
-              ? 'bg-minipay-slate/20 border-gray-850'
-              : 'bg-white/50 border-gray-100'
-          }`}>
-            <h4 className={`font-display font-black text-xs uppercase tracking-widest flex items-center gap-1.5 pb-3 border-b border-gray-400/10 mb-4 ${
-              theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
-              <HelpCircle size={14} className="text-minipay-emerald" />
-              <span>Celo Spec Guide</span>
-            </h4>
-
-            <ul className={`flex flex-col gap-3 font-mono text-[10.5px] ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <li className="flex items-start gap-2.5">
-                <Zap size={11} className="text-minipay-emerald mt-0.5 flex-shrink-0" />
-                <span><strong>MiniPay Integration:</strong> Automatically binds injected Web3 window credentials for instantaneous on-chain consensus.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <Zap size={11} className="text-minipay-emerald mt-0.5 flex-shrink-0" />
-                <span><strong>6 Decimals Precision:</strong> Standard USDT stablecoins represent values securely padded as uint256 integers.</span>
-              </li>
-            </ul>
-          </div>
-
         </div>
 
       </div>
 
-      {/* Floating success screen overlay with high-fidelity Emil Kowalski spring motion physics */}
+      {/* High-fidelity Spring confirmation overlay (Success Draw-in Checkmark Modal) */}
       <AnimatePresence>
         {lastSentTx && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
             <motion.div
-              initial={{ scale: 0.92, y: 15, opacity: 0 }}
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.92, y: 15, opacity: 0 }}
-              transition={{ type: "spring", damping: 26, stiffness: 420 }}
-              className={`w-full max-w-[360px] rounded-[32px] p-8 shadow-2xl relative flex flex-col items-center text-center border overflow-hidden ${
+              exit={{ scale: 0.9, y: 30, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 380 }}
+              className={`w-full max-w-[340px] rounded-[32px] p-6 relative flex flex-col items-center text-center border-2 overflow-hidden ${
                 theme === 'dark'
-                  ? 'bg-gradient-to-b from-[#111c16] to-[#0A0F19] border-emerald-900/60 text-white'
-                  : 'bg-white border-gray-150 text-gray-900 shadow-gray-400/40'
+                  ? 'bg-[#0E1528] border-gray-750 text-white shadow-2xl shadow-black/80'
+                  : 'bg-white border-slate-900 text-slate-950 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
               }`}
             >
-              {/* Absolutes decorative ring */}
-              <div className="absolute top-0 w-full h-[6px] bg-gradient-to-r from-minipay-green to-minipay-emerald" />
+              {/* Solid top border representing thick styling */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-minipay-green" />
 
-              {/* Bouncing success icon wheel */}
-              <div className="w-16 h-16 rounded-full bg-minipay-green/10 flex items-center justify-center text-minipay-emerald border border-minipay-green/20 mb-5 relative">
-                <Check size={32} className="animate-bounce" />
-                <div className="absolute inset-0 rounded-full border border-minipay-green/30 animate-ping opacity-30" />
+              {/* Draw-in Checkmark Animation */}
+              <div className="w-20 h-20 flex items-center justify-center mb-4 mt-2">
+                <svg className="w-16 h-16 text-minipay-emerald" viewBox="0 0 52 52">
+                  <motion.circle
+                    cx="26"
+                    cy="26"
+                    r="23"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  />
+                  <motion.path
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16 27l7 7 15-15"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.4, delay: 0.45, ease: "easeOut" }}
+                  />
+                </svg>
               </div>
 
-              <h3 className="font-display font-extrabold text-xl tracking-tight">
-                Transfer block processed!
+              <h3 className="font-display font-black text-xl tracking-tight">
+                Transfer Successful!
               </h3>
               
-              <p className={`text-xs font-mono mt-2 uppercase tracking-wide px-3 py-1 rounded-full ${
-                theme === 'dark' ? 'bg-emerald-950/20 text-emerald-400' : 'bg-emerald-50 text-emerald-700 font-bold'
+              <p className={`text-[10px] font-mono mt-2 uppercase tracking-widest px-3 py-1 rounded-full font-bold border-2 ${
+                theme === 'dark' 
+                  ? 'bg-emerald-950/20 border-emerald-900 text-emerald-400' 
+                  : 'bg-emerald-50 border-slate-900 text-emerald-800'
               }`}>
-                SUCCESS • CELO CHAIN
+                TRANSACTION CONFIRMED
               </p>
 
-              {/* Amount highlights */}
               <div className="my-6">
-                <span className="text-[15px] text-gray-400 font-mono font-medium">$</span>
-                <span className="font-display font-black text-4xl leading-none">{lastSentTx.amount.toFixed(2)}</span>
-                <span className="ml-1.5 text-xs font-bold font-mono text-minipay-emerald bg-minipay-green/10 border border-minipay-green/20 px-2 py-0.5 rounded-full select-none">
+                <span className="text-sm text-gray-500 font-mono font-bold">$</span>
+                <span className="font-display font-black text-4xl tracking-tight leading-none">
+                  {lastSentTx.amount.toFixed(2)}
+                </span>
+                <span className="ml-1.5 text-[10px] font-black font-mono text-white bg-minipay-green border-2 border-slate-900 px-2 py-0.5 rounded-full shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                   USDT
                 </span>
               </div>
 
-              <p className={`text-xs mb-6 max-w-[240px] leading-relaxed ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              <p className={`text-xs mb-6 max-w-[250px] font-medium leading-relaxed ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-650'
               }`}>
-                Stablecoin funds successfully transferred to <strong>{lastSentTx.nameOrTag}</strong>. Check your wallet balance or recent ledger below.
+                Successfully transfered assets to recipient address: <span className="font-mono block mt-1 font-bold break-all bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border dark:border-gray-800">{lastSentTx.nameOrTag}</span>
               </p>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => {
-                  sound.play('click');
+                  sound.play('confirm');
                   setLastSentTx(null);
                 }}
-                className="w-full bg-gradient-to-r from-minipay-green to-minipay-emerald hover:opacity-95 text-white py-3.5 px-6 rounded-2xl font-display font-black text-sm shadow-xl shadow-minipay-green/15 flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-transform"
+                className="w-full bg-minipay-green text-white py-3.5 px-5 rounded-2xl font-display font-black text-xs border-2 border-slate-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-minipay-green-hover flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
-                <span>Awesome</span>
-                <ArrowRight size={14} />
-              </button>
+                <span>Done</span>
+                <ArrowRight size={13} className="stroke-[3px]" />
+              </motion.button>
             </motion.div>
           </div>
         )}

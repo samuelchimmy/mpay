@@ -6,12 +6,12 @@
   --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   
-  --color-minipay-green: #03D475;
-  --color-minipay-green-hover: #02b362;
-  --color-minipay-emerald: #10B981;
-  --color-minipay-dark: #111827;
-  --color-minipay-slate: #1F2937;
-  --color-minipay-gray: #F3F4F6;
+  --color-minipay-green: #009A60;
+  --color-minipay-green-hover: #008251;
+  --color-minipay-emerald: #009A60;
+  --color-minipay-dark: #0A0F1D;
+  --color-minipay-slate: #131A2E;
+  --color-minipay-gray: #EEF2F6;
 }
 
 /* Custom background mesh gradients */
