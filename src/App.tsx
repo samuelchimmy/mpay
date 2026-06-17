@@ -19,7 +19,8 @@ import {
   encodeERC20Transfer,
   getNativeCeloBalance,
   getUsdtBalance,
-  USDT_ADDRESSES
+  USDT_ADDRESSES,
+  fetchWalletUSDTTransactions
 } from './utils/ethereum';
 import { ArrowRight, Check, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -110,6 +111,21 @@ export default function App() {
         celoBalance: cBal,
         status: 'connected'
       }));
+
+      // Immediately query real on-chain transaction activities
+      const onchainTxs = await fetchWalletUSDTTransactions(addr, net);
+      if (onchainTxs && onchainTxs.length > 0) {
+        setTransactions(prev => {
+          const merged = [...prev];
+          onchainTxs.forEach(onTx => {
+            const exists = merged.some(m => m.txHash === onTx.txHash || m.id === onTx.id);
+            if (!exists) {
+              merged.push(onTx);
+            }
+          });
+          return merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        });
+      }
     } catch (e) {
       console.error("Failed to query Celo ERC-20 token contract balances", e);
     }
@@ -412,15 +428,12 @@ export default function App() {
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 30, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 380 }}
-              className={`w-full max-w-[340px] rounded-[32px] p-6 relative flex flex-col items-center text-center border-2 overflow-hidden ${
+              className={`w-full max-w-[340px] rounded-[32px] p-6 relative flex flex-col items-center text-center border-2 shadow-2xl overflow-hidden ${
                 theme === 'dark'
-                  ? 'bg-[#0E1528] border-gray-750 text-white'
+                  ? 'bg-[#131A2E] border-white/20 text-white'
                   : 'bg-white border-slate-900 text-slate-950'
               }`}
             >
-              {/* Solid top border representing thick styling */}
-              <div className="absolute top-0 left-0 right-0 h-2 bg-minipay-green" />
-
               {/* Draw-in Checkmark Animation */}
               <div className="w-20 h-20 flex items-center justify-center mb-4 mt-2">
                 <svg className="w-16 h-16 text-minipay-emerald" viewBox="0 0 52 52">
@@ -466,13 +479,15 @@ export default function App() {
                 <span className="font-display font-black text-4xl tracking-tight leading-none">
                   {lastSentTx.amount.toFixed(2)}
                 </span>
-                <span className="ml-1.5 text-[10px] font-black font-mono text-white bg-minipay-green border-2 border-slate-900 px-2 py-0.5 rounded-full">
+                <span className={`ml-1.5 text-[10px] font-black font-mono text-white bg-minipay-green border-2 px-2 py-0.5 rounded-full ${
+                  theme === 'dark' ? 'border-white/20' : 'border-slate-900'
+                }`}>
                   USDT
                 </span>
               </div>
 
               <p className={`text-xs mb-6 max-w-[250px] font-medium leading-relaxed ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-650'
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 Successfully transfered assets to recipient address: <span className="font-mono block mt-1 font-bold break-all bg-gray-50 dark:bg-gray-900/50 p-2 rounded-lg border dark:border-gray-800">{lastSentTx.nameOrTag}</span>
               </p>
@@ -484,7 +499,9 @@ export default function App() {
                   sound.play('confirm');
                   setLastSentTx(null);
                 }}
-                className="w-full bg-minipay-green text-white py-3.5 px-5 rounded-2xl font-display font-black text-xs border-2 border-slate-900 hover:bg-minipay-green-hover flex items-center justify-center gap-2 cursor-pointer transition-all"
+                className={`w-full bg-minipay-green text-white py-3.5 px-5 rounded-2xl font-display font-black text-xs border-2 hover:bg-minipay-green-hover flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                  theme === 'dark' ? 'border-white/20' : 'border-slate-900'
+                }`}
               >
                 <span>Done</span>
                 <ArrowRight size={13} className="stroke-[3px]" />

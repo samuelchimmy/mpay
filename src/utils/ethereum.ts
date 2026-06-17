@@ -250,3 +250,45 @@ export async function getConnectedAddress(): Promise<string | null> {
   }
   return null;
 }
+
+/**
+ * Fetches real on-chain USDT transfers from the Blockscout API, keeping it robust and 100% authentic
+ */
+export async function fetchWalletUSDTTransactions(address: string, network: NetworkType): Promise<any[]> {
+  const tokenContract = network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
+  
+  // Choose standard blockscout API endpoints with support for cross-origin JSON fetching
+  const apiUrl = network === 'testnet'
+    ? `https://celo-sepolia.blockscout.com/api?module=account&action=tokentx&contractaddress=${tokenContract}&address=${address}`
+    : `https://explorer.celo.org/api?module=account&action=tokentx&contractaddress=${tokenContract}&address=${address}`;
+
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    if (data && data.status === '1' && Array.isArray(data.result)) {
+      return data.result.map((tx: any) => {
+        const dec = parseInt(tx.tokenDecimal || '6');
+        const amount = parseFloat(tx.value) / Math.pow(10, dec);
+        const isReceive = tx.to.toLowerCase() === address.toLowerCase();
+        
+        return {
+          id: tx.hash,
+          recipientAddress: isReceive ? address : tx.to,
+          recipientName: isReceive ? tx.from : tx.to,
+          moniTag: isReceive ? tx.from : tx.to,
+          amount: amount,
+          timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString(),
+          status: 'success',
+          txHash: tx.hash,
+          network: network,
+          isSimulated: false,
+          isReceive: isReceive
+        };
+      });
+    }
+  } catch (error) {
+    console.warn("Failed to fetch on-chain transfer receipts from Blockscout explorer", error);
+  }
+  return [];
+}
+
