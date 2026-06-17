@@ -376,37 +376,46 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 </span>
               </div>
 
-              <motion.button
-                whileHover={{ scale: claiming ? 1.0 : 1.04 }}
-                whileTap={{ scale: claiming ? 1.0 : 0.96 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                onClick={() => {
-                  sound.play('click');
-                  if (network === 'testnet' && celoBalance <= 0) {
-                    handleClaim();
-                  } else {
-                    setShowSwap(!showSwap);
-                  }
-                }}
-                disabled={claiming}
-                className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
-                  theme === 'dark' 
-                    ? 'border-white/20 hover:bg-minipay-green-hover'
-                    : 'border-slate-900 hover:bg-minipay-green-hover'
-                } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                {network === 'testnet' && celoBalance <= 0 ? (
-                  <>
-                    <Sparkles size={11} className="animate-spin text-white" />
-                    <span>Claim Faucet First</span>
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle size={11} />
-                    <span>{showSwap ? "Cancel" : "Mento Swap"}</span>
-                  </>
+              <div className="flex gap-2">
+                {network === 'testnet' && (
+                  <motion.button
+                    whileHover={{ scale: claiming ? 1.0 : 1.04 }}
+                    whileTap={{ scale: claiming ? 1.0 : 0.96 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    onClick={() => {
+                      sound.play('click');
+                      handleClaim();
+                    }}
+                    disabled={claiming}
+                    className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                      theme === 'dark'
+                        ? 'border-white/20 hover:bg-minipay-green-hover'
+                        : 'border-slate-900 hover:bg-minipay-green-hover'
+                    } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <Sparkles size={11} className={claiming ? "animate-spin" : ""} />
+                    <span>Claim Faucet</span>
+                  </motion.button>
                 )}
-              </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  onClick={() => {
+                    sound.play('click');
+                    setShowSwap(!showSwap);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                    theme === 'dark'
+                      ? 'border-white/20 hover:bg-minipay-green-hover'
+                      : 'border-slate-900 hover:bg-minipay-green-hover'
+                  }`}
+                >
+                  <PlusCircle size={11} />
+                  <span>{showSwap ? "Cancel" : "Mento Swap"}</span>
+                </motion.button>
+              </div>
             </div>
             
             <AnimatePresence>
@@ -480,8 +489,26 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                       )}
 
                       {swapError && (
-                        <div className="text-[10px] font-mono text-red-500 px-1 py-0.5 rounded text-center">
-                          {swapError}
+                        <div className="flex flex-col gap-2 items-center">
+                          <div className="text-[10px] font-mono text-red-500 px-1 py-0.5 rounded text-center">
+                            {swapError}
+                          </div>
+                          {network === 'testnet' && (swapError.includes('CELO') || swapError.includes('balance') || swapError.includes('faucet')) && (
+                            <motion.button
+                              whileHover={{ scale: 1.04 }}
+                              whileTap={{ scale: 0.96 }}
+                              onClick={() => {
+                                sound.play('click');
+                                handleClaim();
+                              }}
+                              className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[10px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                                theme === 'dark' ? 'border-white/20' : 'border-slate-900'
+                              }`}
+                            >
+                              <Sparkles size={10} />
+                              <span>Claim Faucet</span>
+                            </motion.button>
+                          )}
                         </div>
                       )}
 

@@ -284,7 +284,7 @@ export default function App() {
   const handleFaucetClaim = async () => {
     // Open testing stable coin faucet for Sepolia or Mento Swap
     if (wallet.network === 'testnet') {
-      window.open("https://faucet.celo.org/sepolia", "_blank");
+      window.open("https://faucet.celo.org/celo-sepolia", "_blank");
     } else {
       window.open("https://app.mento.org/", "_blank");
     }
