@@ -21,7 +21,7 @@ import {
   getUsdtBalance,
   USDT_ADDRESSES
 } from './utils/ethereum';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -69,6 +69,9 @@ export default function App() {
   
   // Confirmed payment modal
   const [lastSentTx, setLastSentTx] = useState<{ amount: number; nameOrTag: string } | null>(null);
+
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // --- Synchronization & Storage ---
   useEffect(() => {
@@ -430,6 +433,18 @@ export default function App() {
 
       </div>
 
+      {/* Footer */}
+      <div className="w-full max-w-5xl px-4 sm:px-6 mt-4">
+        <div className={`w-full border-t-2 mb-4 ${theme === 'dark' ? 'border-white/20' : 'border-slate-900/20'}`} />
+        <div className="flex justify-center items-center gap-6 text-[10px] font-mono font-medium pb-4">
+          <button onClick={() => setShowTerms(true)} className={`hover:underline transition-colors ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>Terms</button>
+          <button onClick={() => setShowPrivacy(true)} className={`hover:underline transition-colors ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>Privacy</button>
+          <a href="https://github.com/samuelchimmy/mpay" target="_blank" rel="noreferrer" className={`hover:underline flex items-center gap-1 transition-colors ${theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+            GitHub <ExternalLink size={10} />
+          </a>
+        </div>
+      </div>
+
       {/* High-fidelity Spring confirmation overlay (Success Draw-in Checkmark Modal) */}
       <AnimatePresence>
         {lastSentTx && (
@@ -516,6 +531,80 @@ export default function App() {
                 <span>Done</span>
                 <ArrowRight size={13} className="stroke-[3px]" />
               </motion.button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Terms Modal */}
+      <AnimatePresence>
+        {showTerms && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <motion.div 
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className={`w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-[32px] p-6 relative flex flex-col gap-4 border-2 ${
+                theme === 'dark'
+                  ? 'bg-[#0B0F19] border-white text-white'
+                  : 'bg-white border-slate-900 text-slate-950'
+              }`}
+            >
+              <button
+                onClick={() => setShowTerms(false)}
+                className={`absolute right-4 top-4 w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-950 border-white text-white hover:bg-slate-900'
+                    : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
+                }`}
+              >
+                <X size={12} className="stroke-[3px]" />
+              </button>
+              <h3 className="font-display font-black text-xl mb-1">Terms of Service</h3>
+              <div className={`text-[11px] font-mono space-y-4 leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'}`}>
+                <p>By using mPay, you agree to these simulated terms. mPay is a decentralized application simulator designed for the Celo blockchain (Alfajores Testnet / Mainnet).</p>
+                <p>1. <strong>Demo Purposes</strong>: The sandbox mode operates entirely on simulated balances and does not involve real-world value. Testnet transactions are executed on Celo Alfajores.</p>
+                <p>2. <strong>Wallet Security</strong>: You are entirely responsible for the security of your connected Web3 wallet. The application does not store private keys.</p>
+                <p>3. <strong>Liability</strong>: Transactions executed on Mainnet are permanent and irreversible. We do not accept liability for loss of funds resulting from user error or smart contract interactions.</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Privacy Modal */}
+      <AnimatePresence>
+        {showPrivacy && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <motion.div 
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className={`w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-[32px] p-6 relative flex flex-col gap-4 border-2 ${
+                theme === 'dark'
+                  ? 'bg-[#0B0F19] border-white text-white'
+                  : 'bg-white border-slate-900 text-slate-950'
+              }`}
+            >
+              <button
+                onClick={() => setShowPrivacy(false)}
+                className={`absolute right-4 top-4 w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-950 border-white text-white hover:bg-slate-900'
+                    : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
+                }`}
+              >
+                <X size={12} className="stroke-[3px]" />
+              </button>
+              <h3 className="font-display font-black text-xl mb-1">Privacy Policy</h3>
+              <div className={`text-[11px] font-mono space-y-4 leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'}`}>
+                <p>We respect your privacy as a decentralized application. Your data belongs to you.</p>
+                <p>1. <strong>Wallet Connection</strong>: We only collect your public wallet address to interact with the blockchain and check balances. This information is available publicly on the ledger.</p>
+                <p>2. <strong>Local Storage</strong>: Transaction history is stored purely locally on your device within your browser's local storage and is never transmitted to tracking servers.</p>
+                <p>3. <strong>Tracking</strong>: No persistent user identifiable tracking or telemetry is utilized by mPay.</p>
+              </div>
             </motion.div>
           </div>
         )}

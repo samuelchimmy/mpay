@@ -28,18 +28,13 @@ export const Header: React.FC<HeaderProps> = ({
         onClick={() => {
           sound.play('confirm');
         }}
-        className="flex items-center gap-2.5 cursor-pointer select-none"
+        className="flex items-center cursor-pointer select-none"
       >
-        <div className={`w-9 h-9 rounded-xl bg-minipay-green flex items-center justify-center border-2 ${
+        <div className={`px-2.5 h-9 rounded-xl bg-minipay-green flex items-center justify-center border-2 ${
           theme === 'dark' ? 'border-white' : 'border-slate-900'
         }`}>
-          <span className="font-display font-extrabold text-lg text-white">m</span>
+          <span className="font-display font-extrabold text-lg text-white tracking-tight">Mpay</span>
         </div>
-        <span className={`font-display font-black text-xl tracking-tight leading-none ${
-          theme === 'dark' ? 'text-white' : 'text-slate-950'
-        }`}>
-          mPay
-        </span>
       </div>
 
       {/* Action Controls */}

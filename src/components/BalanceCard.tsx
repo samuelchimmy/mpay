@@ -90,17 +90,19 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   }
 
   return (
-    <div className="w-full flex flex-col gap-3.5" id="mpay-balance">
+    <div className="w-full flex flex-col gap-3.5 relative z-20" id="mpay-balance">
       
       {/* Primary Integrated Balance Card (USDT UP, WALLET DOWN, Sleek & Compact) */}
       <div className={`relative w-full rounded-[24px] p-5 transition-all border-2 ${
         theme === 'dark' 
           ? 'bg-[#131A2E] border-white' 
           : 'bg-white border-slate-900'
-      } overflow-hidden`}>
+      }`}>
         
-        {/* Subtle decorative background indicator */}
-        <div className="absolute top-0 right-0 w-20 h-20 bg-minipay-green/5 rounded-full filter blur-xl pointer-events-none" />
+        {/* Subtle decorative background indicator wrapper */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[22px]">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-minipay-green/5 rounded-full filter blur-xl" />
+        </div>
 
         {/* --- SECTION 1: USDT BALANCE (UP) --- */}
         <div className="flex items-center justify-between relative z-10 w-full animate-fade-in">
@@ -267,44 +269,58 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 
       </div>
 
-      {/* Mini Faucet Strip */}
-      <div className={`w-full overflow-hidden flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all ${
-        theme === 'dark'
-          ? 'bg-[#131A2E] border-white'
-          : 'bg-white border-slate-900'
-      }`}>
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1">
-            <Sparkles size={11} className="text-minipay-green animate-pulse" />
-            <span className={`font-display font-black text-xs tracking-tight ${
-              theme === 'dark' ? 'text-white' : 'text-slate-950'
-            }`}>
-              Faucet stable top-up
-            </span>
-          </div>
-          <span className={`text-[10px] font-mono leading-tight ${
-            theme === 'dark' ? 'text-gray-400' : 'text-gray-500 font-medium'
-          }`}>
-            Instantly request simulated $100.00.
-          </span>
-        </div>
+      <AnimatePresence>
+        {network === 'testnet' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ ease: "easeOut", duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3.5">
+              {/* Mini Faucet Strip */}
+              <div className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all ${
+                theme === 'dark'
+                  ? 'bg-[#131A2E] border-white'
+                  : 'bg-white border-slate-900'
+              }`}>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1">
+                  <Sparkles size={11} className="text-minipay-green animate-pulse" />
+                  <span className={`font-display font-black text-xs tracking-tight ${
+                    theme === 'dark' ? 'text-white' : 'text-slate-950'
+                  }`}>
+                    Faucet stable top-up
+                  </span>
+                </div>
+                <span className={`text-[10px] font-mono leading-tight ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500 font-medium'
+                }`}>
+                  Instantly request simulated $100.00.
+                </span>
+              </div>
 
-        <motion.button
-          whileHover={{ scale: claiming ? 1.0 : 1.04 }}
-          whileTap={{ scale: claiming ? 1.0 : 0.96 }}
-          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-          onClick={handleClaim}
-          disabled={claiming}
-          className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
-            theme === 'dark' 
-              ? 'border-white hover:bg-minipay-green-hover'
-              : 'border-slate-900 hover:bg-minipay-green-hover'
-          } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
-        >
-          <PlusCircle size={11} />
-          <span>{claiming ? "Topping..." : "Request $100"}</span>
-        </motion.button>
-      </div>
+              <motion.button
+                whileHover={{ scale: claiming ? 1.0 : 1.04 }}
+                whileTap={{ scale: claiming ? 1.0 : 0.96 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                onClick={handleClaim}
+                disabled={claiming}
+                className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+                  theme === 'dark' 
+                    ? 'border-white hover:bg-minipay-green-hover'
+                    : 'border-slate-900 hover:bg-minipay-green-hover'
+                } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <PlusCircle size={11} />
+                <span>{claiming ? "Topping..." : "Request $100"}</span>
+              </motion.button>
+            </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
