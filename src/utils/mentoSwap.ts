@@ -77,7 +77,10 @@ export async function executeCeloToUsdtSwap(amountInCELO: string) {
     console.log("Prompting user for signature inside MiniPay...");
     const txReq = await mento.swapIn(CELO_ADDRESS, USDT_ADDRESS, amountInWei, amountOutMin);
     
-    const tx = await signer.sendTransaction(txReq);
+    const tx = await signer.sendTransaction({
+      ...txReq,
+      value: amountInWei // Ensure native CELO is sent
+    });
     console.log(`Swap pending... Transaction Hash: ${tx.hash}`);
     
     await tx.wait();

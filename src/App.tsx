@@ -8,6 +8,7 @@ import { Header } from './components/Header';
 import { BalanceCard } from './components/BalanceCard';
 import { SendForm } from './components/SendForm';
 import { RecentTransactions } from './components/RecentTransactions';
+import { Toast, ToastType } from './components/Toast';
 import { Transaction, NetworkType, WalletState } from './types';
 import { sound } from './utils/sounds';
 import { 
@@ -76,6 +77,17 @@ export default function App() {
 
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+
+  // Toast State
+  const [toast, setToast] = useState<{ message: string; type: ToastType; isVisible: boolean }>({
+    message: '',
+    type: 'success',
+    isVisible: false,
+  });
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({ message, type, isVisible: true });
+  };
 
   // --- Synchronization & Storage ---
   useEffect(() => {
@@ -324,6 +336,7 @@ export default function App() {
 
       setTransactions(prev => [faucetTx, ...prev]);
       sound.play('success');
+      showToast("0.2 CELO claimed, you can swap to usdt now", "success");
 
       // Refresh balances after a short delay for on-chain confirmation
       setTimeout(() => {
@@ -333,11 +346,13 @@ export default function App() {
     } catch (err: any) {
       console.error('Faucet error:', err);
       sound.play('error');
+
+      const errorMessage = err.message || 'Faucet request failed';
+      showToast(errorMessage, "error");
+
       // For developer awareness if private key is missing in local dev
       if (err.message.includes('not configured')) {
-        alert("Faucet relayer not configured. Please add FAUCET_PRIVATE_KEY to your environment.");
-      } else {
-        alert(err.message);
+        console.warn("Faucet relayer not configured. Please add FAUCET_PRIVATE_KEY to your environment.");
       }
     }
   };
@@ -601,6 +616,14 @@ export default function App() {
       </AnimatePresence>
 
       {/* Privacy Modal */}
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+      />
+
       <AnimatePresence>
         {showPrivacy && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
