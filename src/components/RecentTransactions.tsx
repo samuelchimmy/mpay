@@ -45,7 +45,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   });
 
   const getExplorerLink = (tx: Transaction) => {
-    const prefix = tx.network === 'mainnet' ? 'https://celoscan.io' : 'https://alfajores.celoscan.io';
+    const prefix = tx.network === 'mainnet' ? 'https://celoscan.io' : 'https://celo-sepolia.blockscout.com';
     return `${prefix}/tx/${tx.txHash}`;
   };
 
@@ -278,7 +278,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   }`}
                 >
                   <ExternalLink size={12} className="stroke-[3px]" />
-                  <span>Verify on CeloScan</span>
+                  <span>Verify on Explorer</span>
                 </a>
 
                 {selectedTx.isSimulated && (

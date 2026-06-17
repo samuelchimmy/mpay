@@ -2,8 +2,9 @@ import { Mento } from '@mento-protocol/mento-sdk';
 import { providers, utils } from 'ethers';
 
 const CELO_ADDRESS = '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9';
-const USDT_ADDRESS = '0x624923e5957e627471659D1872179E735522e97A';
-const TOKEN_DECIMALS = 18;
+const USDT_ADDRESS = '0xd077A400968890Eacc75cdc901F0356c943e4fDb';
+const TOKEN_DECIMALS_IN = 18;
+const TOKEN_DECIMALS_OUT = 6;
 
 let mentoInstance: any = null;
 let providerInstance: any = null;
@@ -16,8 +17,8 @@ const initMento = async () => {
     const provider = new providers.Web3Provider((window as any).ethereum);
     providerInstance = provider;
     
-    // Switch to Celo Alfajores Network (44787)
-    await provider.send('wallet_switchEthereumChain', [{ chainId: '0xaef3' }]);
+    // Switch to Celo Sepolia Network (11142220)
+    await provider.send('wallet_switchEthereumChain', [{ chainId: '0xaa044c' }]);
     
     const signer = provider.getSigner();
     mentoInstance = await Mento.create(signer);
@@ -28,18 +29,18 @@ const initMento = async () => {
 export async function getSwapQuote(amountInCELO: string) {
   try {
     const { mento } = await initMento();
-    const amountInWei = utils.parseUnits(amountInCELO, TOKEN_DECIMALS);
+    const amountInWei = utils.parseUnits(amountInCELO, TOKEN_DECIMALS_IN);
     
     const amountOutWei = await mento.getAmountOut(CELO_ADDRESS, USDT_ADDRESS, amountInWei);
     
     const inputVal = parseFloat(amountInCELO);
-    const amountOutHuman = utils.formatUnits(amountOutWei, TOKEN_DECIMALS);
+    const amountOutHuman = utils.formatUnits(amountOutWei, TOKEN_DECIMALS_OUT);
     const outputVal = parseFloat(amountOutHuman);
     const effectivePrice = inputVal > 0 ? outputVal / inputVal : 0;
     
-    const baseAmountInWei = utils.parseUnits("0.001", TOKEN_DECIMALS);
+    const baseAmountInWei = utils.parseUnits("0.001", TOKEN_DECIMALS_IN);
     const baseOutputWei = await mento.getAmountOut(CELO_ADDRESS, USDT_ADDRESS, baseAmountInWei);
-    const baseOutputVal = parseFloat(utils.formatUnits(baseOutputWei, TOKEN_DECIMALS));
+    const baseOutputVal = parseFloat(utils.formatUnits(baseOutputWei, TOKEN_DECIMALS_OUT));
     const expectedPrice = baseOutputVal / 0.001;
     
     const priceImpact = expectedPrice > 0 
@@ -67,7 +68,7 @@ export async function executeCeloToUsdtSwap(amountInCELO: string) {
     const { mento, provider } = await initMento();
     const signer = provider.getSigner();
 
-    const amountInWei = utils.parseUnits(amountInCELO, TOKEN_DECIMALS);
+    const amountInWei = utils.parseUnits(amountInCELO, TOKEN_DECIMALS_IN);
     const amountOutWei = await mento.getAmountOut(CELO_ADDRESS, USDT_ADDRESS, amountInWei);
     
     // 2% slippage tolerance

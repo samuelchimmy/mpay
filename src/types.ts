@@ -30,7 +30,6 @@ export interface WalletState {
   address: string | null;
   network: NetworkType;
   usdtBalance: number;
-  cusdBalance: number;
   celoBalance: number;
   isSandbox: boolean; // Keep for interface compatibility if needed, but set to false
   status: 'disconnected' | 'connecting' | 'connected';

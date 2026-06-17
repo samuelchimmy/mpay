@@ -7,7 +7,6 @@ import { getSwapQuote, executeCeloToUsdtSwap } from '../utils/mentoSwap';
 
 interface BalanceCardProps {
   usdtBalance: number;
-  cusdBalance: number;
   celoBalance: number;
   network: NetworkType;
   address: string | null;
@@ -20,7 +19,6 @@ interface BalanceCardProps {
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
   usdtBalance,
-  cusdBalance,
   celoBalance,
   network,
   address,
@@ -117,9 +115,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   };
 
   // Dynamically calculate font sizing based on digits to prevent layout overflow
-  const stableBalance = usdtBalance + cusdBalance;
-  const wholePart = formatUSDT(stableBalance).split('.')[0];
-  const decimalPart = formatUSDT(stableBalance).split('.')[1];
+  const wholePart = formatUSDT(usdtBalance).split('.')[0];
+  const decimalPart = formatUSDT(usdtBalance).split('.')[1];
   const digitsCount = wholePart.length;
 
   let sizeClass = "text-3xl"; // default compact style
@@ -158,7 +155,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <span className={`font-mono text-[9px] font-black uppercase tracking-wider ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              Stable Balance
+              USDT Balance
             </span>
           </div>
 
@@ -200,18 +197,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               ? 'border-white/20' 
               : 'border-slate-900'
           }`}>
-            USD
-          </span>
-        </div>
-
-        {/* Stablecoin breakdown info bar */}
-        <div className="mt-1.5 flex items-center gap-1.5 relative z-10 select-none">
-          <span className="font-mono text-[9px] font-black text-slate-500 uppercase tracking-wide">
-            USDT: ${formatUSDT(usdtBalance)}
-          </span>
-          <span className="font-mono text-[9px] font-bold text-slate-300">•</span>
-          <span className="font-mono text-[9px] font-black text-slate-500 uppercase tracking-wide">
-            cUSD: ${formatUSDT(cusdBalance)}
+            USDT
           </span>
         </div>
 
@@ -349,13 +335,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   <span className={`font-display font-black text-xs tracking-tight ${
                     theme === 'dark' ? 'text-white' : 'text-slate-950'
                   }`}>
-                    Get Testnet USDT / cUSD
+                    Get Testnet USDT
                   </span>
                 </div>
                 <span className={`text-[10px] font-mono leading-tight ${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-500 font-medium'
                 }`}>
-                  Swap CELO to USDT/cUSD via Mento.
+                  Swap CELO to USDT via Mento.
                 </span>
               </div>
 

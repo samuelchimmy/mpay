@@ -19,9 +19,7 @@ import {
   encodeERC20Transfer,
   getNativeCeloBalance,
   getUsdtBalance,
-  getCusdBalance,
-  USDT_ADDRESSES,
-  CUSD_ADDRESSES
+  USDT_ADDRESSES
 } from './utils/ethereum';
 import { ArrowRight, Check, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -31,11 +29,6 @@ export default function App() {
   // Default values used when wallet is not connected
   const [balance, setBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_usdt_balance');
-    return saved ? parseFloat(saved) : 0.00;
-  });
-  
-  const [cusdBalance, setCusdBalance] = useState<number>(() => {
-    const saved = localStorage.getItem('mpay_cusd_balance');
     return saved ? parseFloat(saved) : 0.00;
   });
   
@@ -62,7 +55,6 @@ export default function App() {
       address: null,
       network: 'mainnet', // Default to mainnet as requested
       usdtBalance: 0,
-      cusdBalance: 0,
       celoBalance: 0,
       isSandbox: false, // Sandbox mode disabled completely
       status: 'disconnected'
@@ -90,10 +82,6 @@ export default function App() {
   }, [balance]);
 
   useEffect(() => {
-    localStorage.setItem('mpay_cusd_balance', cusdBalance.toString());
-  }, [cusdBalance]);
-
-  useEffect(() => {
     localStorage.setItem('mpay_celo_balance', celoBalance.toString());
   }, [celoBalance]);
 
@@ -111,17 +99,14 @@ export default function App() {
   const fetchLiveBalances = async (addr: string, net: NetworkType) => {
     try {
       const uBal = await getUsdtBalance(addr, net);
-      const cUSDBal = await getCusdBalance(addr, net);
       const cBal = await getNativeCeloBalance(addr, net);
       
       setBalance(uBal);
-      setCusdBalance(cUSDBal);
       setCeloBalance(cBal);
 
       setWallet(prev => ({
         ...prev,
         usdtBalance: uBal,
-        cusdBalance: cUSDBal,
         celoBalance: cBal,
         status: 'connected'
       }));
@@ -145,7 +130,6 @@ export default function App() {
             isSandbox: false,
             status: 'connected',
             usdtBalance: 0,
-            cusdBalance: 0,
             celoBalance: 0
           });
           // Load real live connected wallet balances
@@ -157,11 +141,9 @@ export default function App() {
             isSandbox: false,
             status: 'disconnected',
             usdtBalance: 0,
-            cusdBalance: 0,
             celoBalance: 0
           });
           setBalance(0.00);
-          setCusdBalance(0.00);
           setCeloBalance(0.00);
         }
       } else {
@@ -171,11 +153,9 @@ export default function App() {
           isSandbox: false,
           status: 'disconnected',
           usdtBalance: 0,
-          cusdBalance: 0,
           celoBalance: 0
         });
         setBalance(0.00);
-        setCusdBalance(0.00);
         setCeloBalance(0.00);
       }
     };
@@ -219,11 +199,9 @@ export default function App() {
         isSandbox: false,
         status: 'disconnected',
         usdtBalance: 0,
-        cusdBalance: 0,
         celoBalance: 0
       });
       setBalance(0.00);
-      setCusdBalance(0.00);
       setCeloBalance(0.00);
     }
   };
@@ -258,7 +236,6 @@ export default function App() {
         isSandbox: false,
         status: 'connected',
         usdtBalance: 0,
-        cusdBalance: 0,
         celoBalance: 0
       });
       await fetchLiveBalances(addr, net);
@@ -270,11 +247,9 @@ export default function App() {
         isSandbox: false,
         status: 'disconnected',
         usdtBalance: 0,
-        cusdBalance: 0,
         celoBalance: 0
       });
       setBalance(0.00);
-      setCusdBalance(0.00);
       setCeloBalance(0.00);
       sound.play('error');
     }
@@ -291,9 +266,9 @@ export default function App() {
   };
 
   const handleFaucetClaim = async () => {
-    // Open testing stable coin faucet for Alfajores or Mento Swap
+    // Open testing stable coin faucet for Sepolia or Mento Swap
     if (wallet.network === 'testnet') {
-      window.open("https://faucet.celo.org/alfajores", "_blank");
+      window.open("https://faucet.celo.org/sepolia", "_blank");
     } else {
       window.open("https://app.mento.org/", "_blank");
     }
@@ -318,16 +293,9 @@ export default function App() {
     }
 
     try {
-      // Intelligently select token based on current balances (prefer cUSD if USDT balance is zero/insufficient)
-      const useCusd = wallet.cusdBalance >= amount && wallet.usdtBalance < amount;
-      
-      const contractAddress = useCusd
-        ? (wallet.network === 'mainnet' ? CUSD_ADDRESSES.mainnet : CUSD_ADDRESSES.testnet)
-        : (wallet.network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet);
-        
-      const decimals = useCusd
-        ? 18
-        : (wallet.network === 'mainnet' ? 6 : 18);
+      // Determine contract address and decimals based on current network selection (6 decimals on mainnet and sepolia-testnet)
+      const contractAddress = wallet.network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
+      const decimals = 6;
         
       const dataPayload = encodeERC20Transfer(recipientAddress, amount, decimals);
 
@@ -395,7 +363,6 @@ export default function App() {
           {/* Native/Stable Balance details */}
           <BalanceCard 
             usdtBalance={balance}
-            cusdBalance={cusdBalance}
             celoBalance={celoBalance}
             network={wallet.network}
             address={wallet.address}
@@ -408,7 +375,7 @@ export default function App() {
 
           {/* Secure Transfer engine inputs */}
           <SendForm 
-            balance={balance + cusdBalance}
+            balance={balance}
             theme={theme}
             onSend={handleSendTransaction}
           />
@@ -555,8 +522,8 @@ export default function App() {
               </button>
               <h3 className="font-display font-black text-xl mb-1">Terms of Service</h3>
               <div className={`text-[11px] font-mono space-y-4 leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-slate-600'}`}>
-                <p>By using mPay, you agree to these simulated terms. mPay is a decentralized application simulator designed for the Celo blockchain (Alfajores Testnet / Mainnet).</p>
-                <p>1. <strong>Demo Purposes</strong>: The sandbox mode operates entirely on simulated balances and does not involve real-world value. Testnet transactions are executed on Celo Alfajores.</p>
+                <p>By using mPay, you agree to these simulated terms. mPay is a decentralized application simulator designed for the Celo blockchain (Sepolia Testnet / Mainnet).</p>
+                <p>1. <strong>Demo Purposes</strong>: The sandbox mode operates entirely on simulated balances and does not involve real-world value. Testnet transactions are executed on Celo Sepolia.</p>
                 <p>2. <strong>Wallet Security</strong>: You are entirely responsible for the security of your connected Web3 wallet. The application does not store private keys.</p>
                 <p>3. <strong>Liability</strong>: Transactions executed on Mainnet are permanent and irreversible. We do not accept liability for loss of funds resulting from user error or smart contract interactions.</p>
               </div>
