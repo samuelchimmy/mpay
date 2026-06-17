@@ -1,9 +1,9 @@
 import { NetworkType } from '../types';
 
 // Celo Mainnet: 42220 (0xa4ec)
-// Celo Alfajores Testnet: 44787 (0xafae)
+// Celo Alfajores Testnet: 44787 (0xaef3)
 export const CELO_MAINNET_CHAIN_ID = '0xa4ec';
-export const CELO_ALFAJORES_CHAIN_ID = '0xafae';
+export const CELO_ALFAJORES_CHAIN_ID = '0xaef3';
 
 // Native USDT Celo ERC-20 Token Addresses
 export const USDT_ADDRESSES = {

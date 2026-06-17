@@ -173,7 +173,7 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
           theme === 'dark' ? 'text-gray-400' : 'text-slate-700 font-bold'
         }`}>
           <Wallet size={11} />
-          <span>Recipient Celo Address (0x...)</span>
+          <span>Recipient Address (0x...)</span>
         </label>
         
         <div className="relative flex items-center">

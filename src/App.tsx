@@ -193,7 +193,7 @@ export default function App() {
   };
 
   const handleChainChanged = async (chainIdHex: string) => {
-    const net: NetworkType = chainIdHex === '0xafae' ? 'testnet' : 'mainnet';
+    const net: NetworkType = chainIdHex === '0xaef3' ? 'testnet' : 'mainnet';
     setWallet(prev => ({
       ...prev,
       network: net
@@ -281,8 +281,8 @@ export default function App() {
       setBalance(prev => prev + 100.00);
       setCeloBalance(prev => prev + 0.5);
     } else {
-      // Direct linking of user guidelines for testnet faucet
-      window.open("https://faucet.celo.org/alfajores", "_blank");
+      // Direct users to Mento Swap to get testnet USDT
+      window.open("https://app.mento.org/", "_blank");
     }
   };
 

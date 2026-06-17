@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NetworkType } from '../types';
-import { RefreshCcw, Coins, PlusCircle, Sparkles, Copy, Check, ChevronDown } from 'lucide-react';
+import { RefreshCcw, Coins, PlusCircle, Sparkles, Copy, Check, ChevronDown, ArrowDownUp } from 'lucide-react';
 import { sound } from '../utils/sounds';
 import { motion, AnimatePresence } from 'motion/react';
+import { getSwapQuote, executeCeloToUsdtSwap } from '../utils/mentoSwap';
 
 interface BalanceCardProps {
   usdtBalance: number;
@@ -35,6 +36,52 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showNetworkDropdown, setShowNetworkDropdown] = useState(false);
+  
+  const [showSwap, setShowSwap] = useState(false);
+  const [swapAmount, setSwapAmount] = useState('1.0');
+  const [quoteDetails, setQuoteDetails] = useState<{amountOut: string, priceImpact: number, expectedPrice: number} | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [swapping, setSwapping] = useState(false);
+  const [swapError, setSwapError] = useState('');
+
+  useEffect(() => {
+    if (!showSwap || isSandbox || !swapAmount) return;
+    
+    // Debounce quote fetching
+    const timer = setTimeout(async () => {
+      try {
+        setQuoteLoading(true);
+        setSwapError('');
+        const details = await getSwapQuote(swapAmount);
+        setQuoteDetails(details);
+      } catch (err: any) {
+        setSwapError(err.message || 'Failed to fetch quote');
+        setQuoteDetails(null);
+      } finally {
+        setQuoteLoading(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [swapAmount, showSwap, isSandbox, network]);
+
+  const handleExecuteSwap = async () => {
+    if (!swapAmount || isNaN(parseFloat(swapAmount))) return;
+    try {
+      setSwapping(true);
+      setSwapError('');
+      sound.play('confirm');
+      await executeCeloToUsdtSwap(swapAmount);
+      sound.play('success');
+      setShowSwap(false);
+      onRefreshBalances();
+    } catch (err: any) {
+      console.error(err);
+      setSwapError(err.message || 'Swap failed');
+    } finally {
+      setSwapping(false);
+    }
+  };
+
 
   const formatUSDT = (val: number) => {
     return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -291,13 +338,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   <span className={`font-display font-black text-xs tracking-tight ${
                     theme === 'dark' ? 'text-white' : 'text-slate-950'
                   }`}>
-                    Faucet stable top-up
+                    {isSandbox ? "Faucet stable top-up" : "Get Testnet USDT"}
                   </span>
                 </div>
                 <span className={`text-[10px] font-mono leading-tight ${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-500 font-medium'
                 }`}>
-                  Instantly request simulated $100.00.
+                  {isSandbox ? "Instantly request simulated $100.00." : "Swap CELO to USDT via Mento."}
                 </span>
               </div>
 
@@ -305,7 +352,14 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 whileHover={{ scale: claiming ? 1.0 : 1.04 }}
                 whileTap={{ scale: claiming ? 1.0 : 0.96 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                onClick={handleClaim}
+                onClick={() => {
+                  if (isSandbox) {
+                    handleClaim();
+                  } else {
+                    sound.play('click');
+                    setShowSwap(!showSwap);
+                  }
+                }}
                 disabled={claiming}
                 className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
                   theme === 'dark' 
@@ -314,13 +368,105 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <PlusCircle size={11} />
-                <span>{claiming ? "Topping..." : "Request $100"}</span>
+                <span>{isSandbox ? (claiming ? "Topping..." : "Request $100") : (showSwap ? "Cancel" : "Mento Swap")}</span>
               </motion.button>
             </div>
+            
+            <AnimatePresence>
+              {showSwap && !isSandbox && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`mt-3 w-full p-4 rounded-2xl border-2 ${
+                    theme === 'dark' ? 'bg-[#131A2E]/50 border-white/20' : 'bg-gray-50 border-slate-900/10'
+                  }`}>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label className={`text-[10px] font-display font-black uppercase tracking-wider ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-slate-500'
+                        }`}>Pay (CELO)</label>
+                        <input
+                          type="number"
+                          value={swapAmount}
+                          onChange={(e) => setSwapAmount(e.target.value)}
+                          className={`w-full text-sm font-mono font-bold px-3 py-2.5 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-minipay-green transition-all ${
+                            theme === 'dark' ? 'bg-slate-950 border-white/20 text-white' : 'bg-white border-slate-900 text-slate-900'
+                          }`}
+                          placeholder="Amount in CELO"
+                        />
+                      </div>
+
+                      <div className="flex justify-center -my-2.5 relative z-10">
+                        <div className={`p-1.5 rounded-full border-2 ${
+                          theme === 'dark' ? 'bg-[#131A2E] border-white/20 text-gray-400' : 'bg-white border-slate-900 text-slate-500'
+                        }`}>
+                          <ArrowDownUp size={12} />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className={`text-[10px] font-display font-black uppercase tracking-wider flex justify-between ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-slate-500'
+                        }`}>
+                          <span>Receive (USDT)</span>
+                          {quoteLoading && <span className="animate-pulse text-minipay-green">Fetching quote...</span>}
+                        </label>
+                        <input
+                          type="text"
+                          value={quoteDetails ? parseFloat(quoteDetails.amountOut).toFixed(4) : ''}
+                          disabled
+                          className={`w-full text-sm font-mono font-bold px-3 py-2.5 rounded-xl border-2 transition-all ${
+                            theme === 'dark' ? 'bg-slate-950 border-white/20 text-white' : 'bg-white border-slate-900 text-slate-900'
+                          } opacity-70`}
+                          placeholder={quoteLoading ? "..." : "0.0000"}
+                        />
+                      </div>
+
+                      {quoteDetails && (
+                        <div className={`px-3 py-2 rounded-xl text-[10px] font-mono flex items-center justify-between border-2 ${
+                          theme === 'dark' ? 'bg-slate-950 border-white/10 text-gray-400' : 'bg-white border-slate-900 text-slate-500'
+                        }`}>
+                          <span>Price Impact</span>
+                          <span className={`font-bold ${
+                            quoteDetails.priceImpact > 1 
+                              ? 'text-red-500' 
+                              : quoteDetails.priceImpact > 0.5 
+                                ? 'text-yellow-500' 
+                                : 'text-minipay-emerald'
+                          }`}>
+                            {quoteDetails.priceImpact.toFixed(2)}%
+                          </span>
+                        </div>
+                      )}
+
+                      {swapError && (
+                        <div className="text-[10px] font-mono text-red-500 px-1 py-0.5 rounded text-center">
+                          {swapError}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleExecuteSwap}
+                        disabled={swapping || quoteLoading || !quoteDetails}
+                        className={`w-full py-2.5 rounded-xl bg-minipay-green text-white font-display font-black text-xs uppercase tracking-wider transition-all border-2 ${
+                          theme === 'dark' ? 'border-white/20' : 'border-slate-900'
+                        } ${(swapping || quoteLoading || !quoteDetails) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-minipay-green-hover'}`}
+                      >
+                        {swapping ? 'Swapping in MiniPay...' : 'Confirm Swap'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
 
     </div>
   );
