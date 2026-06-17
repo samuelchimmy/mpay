@@ -11,7 +11,7 @@ interface BalanceCardProps {
   network: NetworkType;
   address: string | null;
   theme: 'light' | 'dark';
-  onFaucetClaim: () => void;
+  onFaucetClaim: () => Promise<void>;
   onRefreshBalances: () => void;
   onSwitchNetwork: (network: NetworkType) => void;
   onConnect: () => void;
@@ -114,14 +114,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
     return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const handleClaim = () => {
-    setClaiming(true);
-    sound.play('success'); 
-    
-    setTimeout(() => {
-      onFaucetClaim();
+  const handleClaim = async () => {
+    try {
+      setClaiming(true);
+      await onFaucetClaim();
+    } finally {
       setClaiming(false);
-    }, 450);
+    }
   };
 
   const handleRefresh = () => {
