@@ -20,11 +20,14 @@ interface BalanceCardProps {
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
   usdtBalance,
+  celoBalance,
   network,
+  isSandbox,
   address,
   theme,
   onFaucetClaim,
   onRefreshBalances,
+  onToggleSandbox,
   onSwitchNetwork,
   onConnect
 }) => {
@@ -68,24 +71,42 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
   };
 
+  // Dynamically calculate font sizing based on digits to prevent layout overflow
+  const wholePart = formatUSDT(usdtBalance).split('.')[0];
+  const digitsCount = wholePart.length;
+
+  let sizeClass = "text-3xl"; // default compact style
+  let symbolSizeClass = "text-2xl";
+  let decimalsSizeClass = "text-xl";
+
+  if (digitsCount > 9) {
+    sizeClass = "text-xl sm:text-2xl";
+    symbolSizeClass = "text-base sm:text-lg";
+    decimalsSizeClass = "text-sm sm:text-base";
+  } else if (digitsCount > 6) {
+    sizeClass = "text-2xl sm:text-3xl";
+    symbolSizeClass = "text-lg sm:text-2xl";
+    decimalsSizeClass = "text-sm sm:text-xl";
+  }
+
   return (
     <div className="w-full flex flex-col gap-3.5" id="mpay-balance">
       
       {/* Primary Integrated Balance Card (USDT UP, WALLET DOWN, Sleek & Compact) */}
       <div className={`relative w-full rounded-[24px] p-5 transition-all border-2 ${
         theme === 'dark' 
-          ? 'bg-slate-950 border-white shadow-[4px_4px_0px_0px_#009A60]' 
-          : 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+          ? 'bg-[#131A2E] border-white' 
+          : 'bg-white border-slate-900'
       } overflow-hidden`}>
         
-        {/* Decorative subtle ambient color flare */}
-        <div className="absolute top-0 right-0 w-24 h-24 bg-minipay-green/5 rounded-full filter blur-xl pointer-events-none" />
+        {/* Subtle decorative background indicator */}
+        <div className="absolute top-0 right-0 w-20 h-20 bg-minipay-green/5 rounded-full filter blur-xl pointer-events-none" />
 
         {/* --- SECTION 1: USDT BALANCE (UP) --- */}
         <div className="flex items-center justify-between relative z-10 w-full animate-fade-in">
           <div className="flex items-center gap-1.5">
             <Coins size={13} className="text-minipay-emerald" />
-            <span className={`font-mono text-[10px] font-black uppercase tracking-wider ${
+            <span className={`font-mono text-[9px] font-black uppercase tracking-wider ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
               USDT Balance
@@ -97,54 +118,58 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 450, damping: 20 }}
             onClick={handleRefresh}
-            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border-2 ${
               theme === 'dark' 
-                ? 'bg-gray-900 border-white text-white hover:bg-slate-800' 
-                : 'bg-gray-50 border-slate-900 text-slate-950 hover:bg-gray-100 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
-            } border-2`}
+                ? 'bg-slate-950 border-white text-white hover:bg-slate-800' 
+                : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
+            }`}
             title="Update balance info"
           >
             <RefreshCcw size={11} className={`${refreshing ? 'animate-spin text-minipay-green' : ''}`} />
           </motion.button>
         </div>
 
-        {/* Dynamic Compact Typography Balance */}
+        {/* Compact Dynamically Sized Balance Display */}
         <div className="mt-2.5 flex items-baseline gap-0.5 relative z-10 select-none">
-          <span className={`font-display font-light text-2xl mr-0.5 ${
+          <span className={`font-display font-light mr-0.5 ${symbolSizeClass} ${
             theme === 'dark' ? 'text-gray-400' : 'text-slate-400'
           }`}>
             $
           </span>
-          <span className={`font-display font-black text-3xl tracking-tight leading-none ${
+          <span className={`font-display font-black tracking-tight leading-none ${sizeClass} ${
             theme === 'dark' ? 'text-white' : 'text-slate-950'
           }`}>
-            {formatUSDT(usdtBalance).split('.')[0]}
+            {wholePart}
           </span>
-          <span className={`font-display font-extrabold text-xl ${
+          <span className={`font-display font-extrabold ${decimalsSizeClass} ${
             theme === 'dark' ? 'text-gray-300' : 'text-slate-500'
           }`}>
             .{formatUSDT(usdtBalance).split('.')[1]}
           </span>
-          <span className="ml-2.5 font-mono text-[9px] font-black text-white bg-minipay-green border-2 border-slate-900 px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+          <span className={`ml-2.5 font-mono text-[8px] sm:text-[9px] font-black text-white bg-minipay-green border-2 px-2 py-0.5 rounded-full uppercase tracking-wider ${
+            theme === 'dark' 
+              ? 'border-white' 
+              : 'border-slate-900'
+          }`}>
             USDT
           </span>
         </div>
 
-        {/* Divider separating up and down sections */}
+        {/* Dashed divider matching light & dark interpretation */}
         <div className={`my-4 border-t-2 border-dashed ${
-          theme === 'dark' ? 'border-gray-800' : 'border-slate-900'
+          theme === 'dark' ? 'border-white/20' : 'border-slate-900/20'
         }`} />
 
         {/* --- SECTION 2: CONTROLS & WALLET INFO (DOWN) --- */}
         <div className="flex items-center justify-between gap-3 relative z-10">
           
-          {/* Address with copy button only (No Demo titles!) */}
+          {/* Address with copy button (No Demo/Sandbox title labels!) */}
           <div className="flex items-center gap-1.5">
             {address ? (
               <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 font-mono text-xs font-black ${
                 theme === 'dark' 
-                  ? 'bg-gray-900 border-white text-white' 
-                  : 'bg-white border-slate-900 text-slate-950 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'bg-slate-950 border-white text-white' 
+                  : 'bg-white border-slate-900 text-slate-950'
               }`}>
                 <span>{formatAddress(address)}</span>
                 
@@ -152,7 +177,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   type="button"
                   onClick={handleCopyAddress}
                   className={`p-0.5 rounded transition-all cursor-pointer hover:bg-minipay-green/10 ${
-                    theme === 'dark' ? 'text-gray-450 hover:text-white' : 'text-slate-600 hover:text-minipay-emerald'
+                    theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-slate-600 hover:text-minipay-emerald'
                   }`}
                   title="Copy address"
                 >
@@ -186,8 +211,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               }}
               className={`px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold tracking-wider uppercase border-2 transition-all flex items-center gap-1 cursor-pointer ${
                 theme === 'dark'
-                  ? 'bg-gray-900 border-white text-white hover:bg-gray-800'
-                  : 'bg-white border-slate-900 text-slate-950 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50'
+                  ? 'bg-slate-950 border-white text-white hover:bg-gray-800'
+                  : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-50'
               }`}
             >
               <span>{network}</span>
@@ -201,10 +226,10 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
-                  className={`absolute right-0 mt-1 border-2 rounded-xl shadow-xl py-1 z-50 min-w-[110px] font-mono text-xs ${
+                  className={`absolute right-0 mt-1 border-2 rounded-xl py-1 z-50 min-w-[110px] font-mono text-xs ${
                     theme === 'dark'
-                      ? 'bg-slate-900 border-white text-white shadow-black/60'
-                      : 'bg-white border-slate-900 text-slate-950 shadow-gray-200/50'
+                      ? 'bg-[#131A2E] border-white text-white'
+                      : 'bg-white border-slate-900 text-slate-950'
                   }`}
                 >
                   <button
@@ -245,8 +270,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       {/* Mini Faucet Strip */}
       <div className={`w-full overflow-hidden flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all ${
         theme === 'dark'
-          ? 'bg-slate-950 border-white shadow-[2px_2px_0px_0px_#009A60]'
-          : 'bg-emerald-500/[0.04] border-slate-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+          ? 'bg-[#131A2E] border-white'
+          : 'bg-white border-slate-900'
       }`}>
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-1">
@@ -270,9 +295,11 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           transition={{ type: "spring", stiffness: 400, damping: 20 }}
           onClick={handleClaim}
           disabled={claiming}
-          className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 shadow-md transition-all cursor-pointer border-2 border-slate-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:bg-minipay-green-hover ${
-            claiming ? 'opacity-50 pointer-events-none' : ''
-          }`}
+          className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
+            theme === 'dark' 
+              ? 'border-white hover:bg-minipay-green-hover'
+              : 'border-slate-900 hover:bg-minipay-green-hover'
+          } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
         >
           <PlusCircle size={11} />
           <span>{claiming ? "Topping..." : "Request $100"}</span>

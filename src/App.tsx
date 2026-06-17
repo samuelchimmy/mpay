@@ -441,8 +441,8 @@ export default function App() {
               transition={{ type: "spring", damping: 25, stiffness: 380 }}
               className={`w-full max-w-[340px] rounded-[32px] p-6 relative flex flex-col items-center text-center border-2 overflow-hidden ${
                 theme === 'dark'
-                  ? 'bg-[#0E1528] border-gray-750 text-white shadow-2xl shadow-black/80'
-                  : 'bg-white border-slate-900 text-slate-950 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'bg-[#0E1528] border-gray-750 text-white'
+                  : 'bg-white border-slate-900 text-slate-950'
               }`}
             >
               {/* Solid top border representing thick styling */}
@@ -493,7 +493,7 @@ export default function App() {
                 <span className="font-display font-black text-4xl tracking-tight leading-none">
                   {lastSentTx.amount.toFixed(2)}
                 </span>
-                <span className="ml-1.5 text-[10px] font-black font-mono text-white bg-minipay-green border-2 border-slate-900 px-2 py-0.5 rounded-full shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                <span className="ml-1.5 text-[10px] font-black font-mono text-white bg-minipay-green border-2 border-slate-900 px-2 py-0.5 rounded-full">
                   USDT
                 </span>
               </div>
@@ -511,7 +511,7 @@ export default function App() {
                   sound.play('confirm');
                   setLastSentTx(null);
                 }}
-                className="w-full bg-minipay-green text-white py-3.5 px-5 rounded-2xl font-display font-black text-xs border-2 border-slate-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-minipay-green-hover flex items-center justify-center gap-2 cursor-pointer transition-all"
+                className="w-full bg-minipay-green text-white py-3.5 px-5 rounded-2xl font-display font-black text-xs border-2 border-slate-900 hover:bg-minipay-green-hover flex items-center justify-center gap-2 cursor-pointer transition-all"
               >
                 <span>Done</span>
                 <ArrowRight size={13} className="stroke-[3px]" />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react';
-import { Send, DollarSign, Wallet, Check, Camera, Zap } from 'lucide-react';
+import { Send, DollarSign, Wallet, Check, Zap } from 'lucide-react';
 import { sound } from '../utils/sounds';
 
 interface SendFormProps {
@@ -135,10 +135,10 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
   };
 
   return (
-    <div className={`w-full rounded-3xl p-5 transition-all border-2 ${
+    <div className={`w-full rounded-[24px] p-5 transition-all border-2 ${
       theme === 'dark'
-        ? 'bg-gradient-to-br from-minipay-slate to-slate-900 border-gray-800 shadow-2xl'
-        : 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+        ? 'bg-[#131A2E] border-white'
+        : 'bg-white border-slate-900'
     }`} id="mpay-send-form">
       
       {/* Title */}
@@ -157,8 +157,8 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
           onClick={simulateQRScanner}
           className={`flex items-center gap-1.5 text-[10px] font-mono font-bold px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
             theme === 'dark'
-              ? 'bg-gray-800 border-gray-750 text-gray-350 hover:bg-gray-700'
-              : 'bg-white border-slate-900 text-slate-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50'
+              ? 'bg-slate-950 border-white text-white hover:bg-slate-800'
+              : 'bg-white border-slate-900 text-slate-900 hover:bg-gray-50'
           }`}
           title="Paste Address"
         >
@@ -184,8 +184,8 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
             placeholder="0x9965503B1a059..."
             className={`w-full border-2 rounded-xl p-3 pr-10 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-minipay-green transition-all ${
               theme === 'dark'
-                ? 'bg-gray-850 border-gray-800 text-white placeholder-gray-650'
-                : 'bg-white border-slate-900 text-slate-900 placeholder-gray-400 focus:bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                ? 'bg-slate-950 border-white text-white placeholder-gray-500'
+                : 'bg-white border-slate-900 text-slate-900 placeholder-gray-400 focus:bg-white'
             }`}
           />
           <span className="absolute right-3.5 text-gray-400">
@@ -211,8 +211,8 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
             placeholder="0.00"
             className={`w-full border-2 rounded-xl p-3 pl-8 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-minipay-green transition-all ${
               theme === 'dark'
-                ? 'bg-gray-850 border-gray-800 text-white placeholder-gray-655'
-                : 'bg-white border-slate-900 text-slate-900 placeholder-gray-400 focus:bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                ? 'bg-slate-950 border-white text-white placeholder-gray-500'
+                : 'bg-white border-slate-900 text-slate-900 placeholder-gray-400 focus:bg-white'
             }`}
           />
           <div className="absolute left-3 text-minipay-emerald font-mono font-bold text-xs">$</div>
@@ -232,8 +232,8 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
               onClick={() => triggerPreset(preset)}
               className={`flex-1 rounded-xl py-1.5 text-xs font-mono font-medium border-2 transition-all cursor-pointer ${
                 theme === 'dark'
-                  ? 'bg-gray-850 border-gray-800 text-gray-300 hover:bg-gray-800 hover:text-white'
-                  : 'bg-white border-slate-900 text-slate-900 hover:bg-gray-55 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'bg-slate-950 border-white text-white hover:bg-slate-800'
+                  : 'bg-white border-slate-900 text-slate-900 hover:bg-gray-50'
               }`}
             >
               +${preset}
@@ -246,8 +246,8 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
             onClick={triggerMax}
             className={`flex-1 rounded-xl py-1.5 text-xs font-mono font-black uppercase border-2 transition-all cursor-pointer ${
               theme === 'dark'
-                ? 'bg-minipay-green/10 border-minipay-green/35 text-minipay-emerald hover:bg-minipay-green/20'
-                : 'bg-minipay-green text-white border-slate-900 hover:bg-minipay-green-hover shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]'
+                ? 'bg-minipay-green border-white text-white hover:bg-minipay-green-hover'
+                : 'bg-minipay-green text-white border-slate-900 hover:bg-minipay-green-hover'
             }`}
           >
             Max
@@ -285,18 +285,18 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
         {isSending ? (
           <div className={`w-full rounded-xl p-3 text-center text-xs font-mono font-bold flex items-center justify-center gap-2 border ${
             theme === 'dark'
-              ? 'bg-gray-850/80 border-gray-800 text-gray-300'
-              : 'bg-gray-50 border-gray-200 text-gray-750'
+              ? 'bg-[#131A2E]/80 border-white text-white'
+              : 'bg-gray-50 border-slate-900 text-slate-900'
           }`}>
             <span className="w-3.5 h-3.5 rounded-full border-2 border-minipay-green border-t-transparent animate-spin" />
             <span>Broadcasting transaction...</span>
           </div>
         ) : (
           <div 
-            className={`w-full max-w-[270px] h-[48px] rounded-xl p-1 relative overflow-hidden select-none flex items-center border transition-all ${
+            className={`w-full max-w-[270px] h-[48px] rounded-xl p-1 relative overflow-hidden select-none flex items-center border-2 transition-all ${
               theme === 'dark'
-                ? 'bg-slate-900 border-gray-800'
-                : 'bg-gray-950 border-gray-950'
+                ? 'bg-slate-950 border-white'
+                : 'bg-gray-950 border-slate-900'
             }`}
             id="slide-to-send-container"
           >
@@ -324,7 +324,9 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
               whileDrag={{ scale: 1.05 }}
               whileHover={{ cursor: 'grab' }}
               whileTap={{ cursor: 'grabbing' }}
-              className="w-9 h-9 rounded-lg bg-minipay-green flex items-center justify-center text-white shadow-lg cursor-grab z-20 hover:bg-minipay-green-hover active:bg-minipay-emerald transition-colors"
+              className={`w-9 h-9 rounded-lg bg-minipay-green flex items-center justify-center text-white cursor-grab z-20 hover:bg-minipay-green-hover active:bg-minipay-emerald transition-all border-2 ${
+                theme === 'dark' ? 'border-white' : 'border-slate-900'
+              }`}
             >
               <Send size={13} />
             </motion.div>

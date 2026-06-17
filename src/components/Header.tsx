@@ -17,10 +17,10 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme
 }) => {
   return (
-    <header className={`w-full px-5 py-4 border-b flex items-center justify-between transition-all ${
+    <header className={`w-full px-5 py-4 border-b-2 flex items-center justify-between transition-all ${
       theme === 'dark' 
-        ? 'bg-slate-900 border-gray-800' 
-        : 'bg-white border-gray-150'
+        ? 'bg-[#0B0F19] border-white' 
+        : 'bg-white border-slate-900'
     }`} id="mpay-header">
       
       {/* Brand logo & title */}
@@ -30,11 +30,13 @@ export const Header: React.FC<HeaderProps> = ({
         }}
         className="flex items-center gap-2.5 cursor-pointer select-none"
       >
-        <div className="w-9 h-9 rounded-xl bg-minipay-green flex items-center justify-center shadow-lg shadow-minipay-green/15">
+        <div className={`w-9 h-9 rounded-xl bg-minipay-green flex items-center justify-center border-2 ${
+          theme === 'dark' ? 'border-white' : 'border-slate-900'
+        }`}>
           <span className="font-display font-extrabold text-lg text-white">m</span>
         </div>
         <span className={`font-display font-black text-xl tracking-tight leading-none ${
-          theme === 'dark' ? 'text-white' : 'text-gray-950'
+          theme === 'dark' ? 'text-white' : 'text-slate-950'
         }`}>
           mPay
         </span>
@@ -52,14 +54,14 @@ export const Header: React.FC<HeaderProps> = ({
             sound.play('click');
             onToggleTheme();
           }}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+          className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all cursor-pointer ${
             theme === 'dark' 
-              ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-yellow-400' 
-              : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-650'
+              ? 'bg-[#131A2E] border-white hover:bg-slate-800 text-yellow-400' 
+              : 'bg-white border-slate-900 hover:bg-gray-100 text-slate-800'
           }`}
           title="Toggle color theme"
         >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
         </motion.button>
 
         {/* Sound switch */}
@@ -71,14 +73,14 @@ export const Header: React.FC<HeaderProps> = ({
             sound.play('click');
             onToggleMute();
           }}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+          className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all cursor-pointer ${
             theme === 'dark' 
-              ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-300' 
-              : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-650'
+              ? 'bg-[#131A2E] border-white hover:bg-slate-800 text-gray-300' 
+              : 'bg-white border-slate-900 hover:bg-gray-100 text-slate-800'
           }`}
           title={isMuted ? "Unmute system" : "Mute system"}
         >
-          {isMuted ? <VolumeX size={15} className="text-gray-400" /> : <Volume2 size={15} className="text-minipay-green" />}
+          {isMuted ? <VolumeX size={14} className="text-gray-400" /> : <Volume2 size={14} className="text-minipay-green" />}
         </motion.button>
 
       </div>
