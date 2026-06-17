@@ -281,56 +281,57 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
       </AnimatePresence>
 
       {/* Sliding slide-to-confirm mechanism */}
-      <div className="w-full flex justify-center">
-        {isSending ? (
-          <div className={`w-full rounded-xl p-3 text-center text-xs font-mono font-bold flex items-center justify-center gap-2 border-2 ${
+      <div className="w-full flex justify-center relative">
+        <div 
+          className={`w-full max-w-[270px] h-[48px] rounded-xl p-1 relative overflow-hidden select-none flex items-center border-2 transition-all ${
             theme === 'dark'
-              ? 'bg-[#131A2E]/80 border-white/20 text-white'
-              : 'bg-gray-50 border-slate-900 text-slate-900'
-          }`}>
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-minipay-green border-t-transparent animate-spin" />
-            <span>Broadcasting transaction...</span>
+              ? 'bg-slate-950 border-white/20'
+              : 'bg-gray-950 border-slate-900'
+          } ${isSending ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          id="slide-to-send-container"
+        >
+          {/* Background label text */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none pr-3">
+            <span className="text-[10px] font-display font-black tracking-widest text-white/70 text-center uppercase select-none">
+              Slide to Confirm
+            </span>
           </div>
-        ) : (
-          <div 
-            className={`w-full max-w-[270px] h-[48px] rounded-xl p-1 relative overflow-hidden select-none flex items-center border-2 transition-all ${
-              theme === 'dark'
-                ? 'bg-slate-950 border-white/20'
-                : 'bg-gray-950 border-slate-900'
+
+          {/* Shine overlay progress */}
+          <motion.div 
+            style={{ width: useTransform(x, (v: number) => `${v + 36}px`) }}
+            className="absolute inset-y-0 left-0 bg-minipay-green/15 pointer-events-none rounded-l-lg" 
+          />
+
+          {/* Draggable Motion Handle */}
+          <motion.div
+            drag={isSending ? false : "x"}
+            dragConstraints={{ left: 0, right: dragLimit }}
+            dragElastic={0.05}
+            dragMomentum={false}
+            onDrag={handleDrag}
+            style={{ x }}
+            whileDrag={!isSending ? { scale: 1.05 } : {}}
+            whileHover={!isSending ? { cursor: 'grab' } : {}}
+            whileTap={!isSending ? { cursor: 'grabbing' } : {}}
+            className={`w-9 h-9 rounded-lg bg-minipay-green flex items-center justify-center text-white cursor-grab z-20 hover:bg-minipay-green-hover active:bg-minipay-emerald transition-all border-2 ${
+              theme === 'dark' ? 'border-white/20' : 'border-slate-900'
             }`}
-            id="slide-to-send-container"
           >
-            {/* Background label text */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none pr-3">
-              <span className="text-[10px] font-display font-black tracking-widest text-white/70 text-center uppercase select-none">
-                Slide to Confirm
-              </span>
-            </div>
+            <Send size={13} />
+          </motion.div>
+        </div>
 
-            {/* Shine overlay progress */}
-            <motion.div 
-              style={{ width: useTransform(x, (v: number) => `${v + 36}px`) }}
-              className="absolute inset-y-0 left-0 bg-minipay-green/15 pointer-events-none rounded-l-lg" 
-            />
-
-            {/* Draggable Motion Handle */}
-            <motion.div
-              drag="x"
-              dragConstraints={{ left: 0, right: dragLimit }}
-              dragElastic={0.05}
-              dragMomentum={false}
-              onDrag={handleDrag}
-              style={{ x }}
-              whileDrag={{ scale: 1.05 }}
-              whileHover={{ cursor: 'grab' }}
-              whileTap={{ cursor: 'grabbing' }}
-              className={`w-9 h-9 rounded-lg bg-minipay-green flex items-center justify-center text-white cursor-grab z-20 hover:bg-minipay-green-hover active:bg-minipay-emerald transition-all border-2 ${
-                theme === 'dark' ? 'border-white/20' : 'border-slate-900'
-              }`}
-            >
-              <Send size={13} />
-            </motion.div>
-          </div>
+        {/* Broadcasting overlay */}
+        {isSending && (
+           <div className={`absolute inset-0 w-full h-full rounded-xl p-3 text-center text-xs font-mono font-bold flex items-center justify-center gap-2 border-2 ${
+             theme === 'dark'
+               ? 'bg-[#131A2E] border-white/20 text-white'
+               : 'bg-gray-50 border-slate-900 text-slate-900'
+           }`}>
+             <span className="w-3.5 h-3.5 rounded-full border-2 border-minipay-green border-t-transparent animate-spin" />
+             <span>Broadcasting transaction...</span>
+           </div>
         )}
       </div>
 

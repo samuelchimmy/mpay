@@ -305,7 +305,6 @@ export default function App() {
           from: wallet.address,
           to: contractAddress,
           data: dataPayload,
-          gas: '0x2625a0',
         }]
       });
 
