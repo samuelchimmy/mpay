@@ -29,12 +29,12 @@ export default function App() {
   // Default values used when wallet is not connected or in sandbox demo mode
   const [balance, setBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_usdt_balance');
-    return saved ? parseFloat(saved) : 100.00;
+    return saved ? parseFloat(saved) : 0.00;
   });
   
   const [celoBalance, setCeloBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_celo_balance');
-    return saved ? parseFloat(saved) : 5.00;
+    return saved ? parseFloat(saved) : 0.00;
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -55,7 +55,7 @@ export default function App() {
   const [wallet, setWallet] = useState<WalletState>(() => {
     return {
       address: null,
-      network: 'testnet', // Default to testnet as requested
+      network: 'mainnet', // Default to mainnet as requested
       usdtBalance: 0,
       celoBalance: 0,
       isSandbox: true, // Sandbox mode enabled by default until a client connects
@@ -110,6 +110,8 @@ export default function App() {
   useEffect(() => {
     const initWeb3Check = async () => {
       const eth = await getInjectedEthereum();
+      const defaultAddr = "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d";
+      
       if (eth) {
         const addr = await getConnectedAddress();
         if (addr) {
@@ -127,24 +129,26 @@ export default function App() {
         } else {
           // Preset clean sandbox configuration for demo context
           setWallet({
-            address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d", // Demo tag
-            network: 'testnet',
+            address: defaultAddr, // Demo tag
+            network: 'mainnet',
             isSandbox: true,
             status: 'connected',
-            usdtBalance: 100,
-            celoBalance: 5
+            usdtBalance: 0,
+            celoBalance: 0
           });
+          await fetchLiveBalances(defaultAddr, 'mainnet');
         }
       } else {
         // Fallback clean sandbox configurations
         setWallet({
-          address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
-          network: 'testnet',
+          address: defaultAddr,
+          network: 'mainnet',
           isSandbox: true,
           status: 'connected',
-          usdtBalance: 108,
-          celoBalance: 5
+          usdtBalance: 0,
+          celoBalance: 0
         });
+        await fetchLiveBalances(defaultAddr, 'mainnet');
       }
     };
     initWeb3Check();
@@ -170,7 +174,7 @@ export default function App() {
   const handleAccountsChanged = async (accounts: Array<string>) => {
     if (accounts.length > 0) {
       const eth = await getInjectedEthereum();
-      const rawNet = eth ? await getWalletNetwork() : 'testnet' as NetworkType;
+      const rawNet = eth ? await getWalletNetwork() : 'mainnet' as NetworkType;
       setWallet(prev => ({
         ...prev,
         address: accounts[0],
@@ -183,7 +187,7 @@ export default function App() {
     } else {
       setWallet({
         address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
-        network: 'testnet',
+        network: 'mainnet',
         isSandbox: true,
         status: 'connected',
         usdtBalance: 100,
@@ -251,7 +255,7 @@ export default function App() {
     } else {
       setWallet({
         address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
-        network: 'testnet',
+        network: 'mainnet',
         isSandbox: true,
         status: 'connected',
         usdtBalance: 100,
@@ -264,6 +268,9 @@ export default function App() {
   const handleSwitchNetwork = async (network: NetworkType) => {
     if (wallet.isSandbox) {
       setWallet(prev => ({ ...prev, network }));
+      if (wallet.address) {
+        await fetchLiveBalances(wallet.address, network);
+      }
       return;
     }
 

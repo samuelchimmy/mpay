@@ -9,6 +9,7 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        'assert': path.resolve(__dirname, './src/utils/assertMock.ts'),
       },
     },
     server: {

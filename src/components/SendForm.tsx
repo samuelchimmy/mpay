@@ -302,7 +302,7 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
           >
             {/* Background label text */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none pr-3">
-              <span className="text-[10px] font-display font-black tracking-widest text-white/70 text-center uppercase animate-pulse select-none">
+              <span className="text-[10px] font-display font-black tracking-widest text-white/70 text-center uppercase select-none">
                 Slide to Confirm
               </span>
             </div>

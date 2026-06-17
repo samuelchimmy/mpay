@@ -1,9 +1,15 @@
 import { NetworkType } from '../types';
+import { providers, Contract, utils } from 'ethers';
 
 // Celo Mainnet: 42220 (0xa4ec)
 // Celo Alfajores Testnet: 44787 (0xaef3)
 export const CELO_MAINNET_CHAIN_ID = '0xa4ec';
 export const CELO_ALFAJORES_CHAIN_ID = '0xaef3';
+
+export const RPC_URLS = {
+  mainnet: 'https://forno.celo.org',
+  testnet: 'https://alfajores-forno.celo-testnet.org'
+};
 
 // Native USDT Celo ERC-20 Token Addresses
 export const USDT_ADDRESSES = {
@@ -84,20 +90,29 @@ export async function getWalletNetwork(): Promise<NetworkType> {
 /**
  * Queries native CELO balance of an address on-chain.
  */
-export async function getNativeCeloBalance(address: string): Promise<number> {
-  const eth = await getInjectedEthereum();
-  if (!eth) return 0;
+export async function getNativeCeloBalance(address: string, network: NetworkType = 'mainnet'): Promise<number> {
+  const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
   try {
-    const rawBalHex = await eth.request({
-      method: 'eth_getBalance',
-      params: [address, 'latest']
-    });
-    if (rawBalHex) {
-      const wei = parseInt(rawBalHex, 16);
-      return isNaN(wei) ? 0 : wei / 1e18;
-    }
+    const provider = new providers.JsonRpcProvider(rpcUrl);
+    const rawBal = await provider.getBalance(address);
+    return parseFloat(utils.formatEther(rawBal));
   } catch (e) {
-    console.error("Failed to fetch CELO balance", e);
+    console.error("Failed to fetch CELO balance from public RPC", e);
+    const eth = await getInjectedEthereum();
+    if (eth) {
+      try {
+        const rawBalHex = await eth.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest']
+        });
+        if (rawBalHex) {
+          const wei = parseInt(rawBalHex, 16);
+          return isNaN(wei) ? 0 : wei / 1e18;
+        }
+      } catch (innerErr) {
+        console.error("Injected wallet fallback fetch CELO balance also failed", innerErr);
+      }
+    }
   }
   return 0;
 }
@@ -106,34 +121,42 @@ export async function getNativeCeloBalance(address: string): Promise<number> {
  * Queries USDT balance of an address on-chain.
  */
 export async function getUsdtBalance(address: string, network: NetworkType): Promise<number> {
-  const eth = await getInjectedEthereum();
-  if (!eth) return 0;
-  
   const tokenContract = network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
-  
-  // Selector for balanceOf(address) is 0x70a08231
-  // Followed by 32 byte padded address
-  const cleanAddr = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
-  const data = '0x70a08231' + cleanAddr;
-  
+  const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
   try {
-    const balanceHex = await eth.request({
-      method: 'eth_call',
-      params: [
-        {
-          to: tokenContract,
-          data: data
-        },
-        'latest'
-      ]
-    });
-    if (balanceHex && balanceHex !== '0x') {
-      const rawInt = BigInt(balanceHex);
-      // USDT on Celo is typically 6 decimals
-      return Number(rawInt) / 1e6;
-    }
+    const provider = new providers.JsonRpcProvider(rpcUrl);
+    const contract = new Contract(
+      tokenContract,
+      ['function balanceOf(address) view returns (uint256)'],
+      provider
+    );
+    const rawBal = await contract.balanceOf(address);
+    return Number(rawBal) / 1e6;
   } catch (e) {
-    console.error("Failed to fetch USDT token balance", e);
+    console.error("Failed to fetch USDT balance from public RPC", e);
+    const eth = await getInjectedEthereum();
+    if (eth) {
+      const cleanAddr = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+      const data = '0x70a08231' + cleanAddr;
+      try {
+        const balanceHex = await eth.request({
+          method: 'eth_call',
+          params: [
+            {
+              to: tokenContract,
+              data: data
+            },
+            'latest'
+          ]
+        });
+        if (balanceHex && balanceHex !== '0x') {
+          const rawInt = BigInt(balanceHex);
+          return Number(rawInt) / 1e6;
+        }
+      } catch (innerErr) {
+        console.error("Injected wallet fallback fetch USDT balance also failed", innerErr);
+      }
+    }
   }
   return 0;
 }
