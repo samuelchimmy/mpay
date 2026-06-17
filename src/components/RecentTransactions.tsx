@@ -52,7 +52,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   return (
     <div className={`w-full rounded-[24px] p-5 transition-all border-2 ${
       theme === 'dark'
-        ? 'bg-[#131A2E] border-white'
+        ? 'bg-[#131A2E] border-white/20'
         : 'bg-white border-slate-900'
     }`} id="mpay-recent-txs">
       
@@ -91,7 +91,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             placeholder="Search address or dollar quantity..."
             className={`w-full rounded-xl py-2.5 px-3.5 pl-9 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-minipay-green transition-all border-2 ${
               theme === 'dark'
-                ? 'bg-slate-950 border-white text-white placeholder-gray-500'
+                ? 'bg-slate-950 border-white/20 text-white placeholder-gray-500'
                 : 'bg-white border-slate-900 text-slate-900 placeholder-gray-400 focus:bg-white'
             }`}
           />
@@ -132,7 +132,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 onClick={() => handleTxClick(tx)}
                 className={`w-full text-left rounded-xl p-3 flex items-center justify-between transition-all border-2 cursor-pointer ${
                   theme === 'dark'
-                    ? 'bg-slate-950 border-white hover:bg-[#131A2E]'
+                    ? 'bg-slate-950 border-white/20 hover:bg-[#131A2E]'
                     : 'bg-white border-slate-900 hover:bg-gray-50'
                 }`}
               >
@@ -140,7 +140,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                     theme === 'dark' 
-                      ? isSuccess ? 'bg-emerald-950/40 border-white text-emerald-400' : 'bg-rose-950/40 border-white text-rose-450'
+                      ? isSuccess ? 'bg-emerald-950/40 border-white/20 text-emerald-400' : 'bg-rose-950/40 border-white/20 text-rose-450'
                       : isSuccess ? 'bg-emerald-50 border-slate-900 text-emerald-700' : 'bg-rose-50 border-slate-900 text-rose-700'
                   }`}>
                     <ArrowUpRight size={14} />
@@ -194,7 +194,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className={`w-full max-w-[340px] rounded-3xl p-6 relative flex flex-col gap-4 border-2 ${
                 theme === 'dark'
-                  ? 'bg-[#131A2E] border-white text-white'
+                  ? 'bg-[#131A2E] border-white/20 text-white'
                   : 'bg-white border-slate-900 text-slate-950'
               }`}
             >
@@ -206,7 +206,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 }}
                 className={`absolute right-4 top-4 w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${
                   theme === 'dark'
-                    ? 'bg-slate-950 border-white text-white hover:bg-slate-900'
+                    ? 'bg-slate-950 border-white/20 text-white hover:bg-slate-900'
                     : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
                 }`}
               >
@@ -216,7 +216,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
               {/* Receipt Emblem header */}
               <div className="flex flex-col items-center gap-1.5 text-center mt-3 select-none">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-minipay-emerald border-2 ${
-                  theme === 'dark' ? 'bg-[#131A2E] border-white' : 'bg-emerald-50 border-slate-900'
+                  theme === 'dark' ? 'bg-[#131A2E] border-white/20' : 'bg-emerald-50 border-slate-900'
                 }`}>
                   <ArrowUpRight size={22} className="stroke-[3px]" />
                 </div>
@@ -273,7 +273,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   onClick={() => sound.play('click')}
                   className={`flex-1 bg-minipay-green text-white py-2.5 px-4 rounded-xl text-center text-xs font-display font-black flex items-center justify-center gap-1.5 transition-all border-2 ${
                     theme === 'dark' 
-                      ? 'border-white hover:bg-minipay-green-hover' 
+                      ? 'border-white/20 hover:bg-minipay-green-hover' 
                       : 'border-slate-900 hover:bg-minipay-green-hover'
                   }`}
                 >
@@ -283,7 +283,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
                 {selectedTx.isSimulated && (
                   <div className={`text-[9px] border-2 rounded-xl px-2.5 py-1 flex items-center gap-1 font-mono font-bold ${
-                    theme === 'dark' ? 'bg-[#131A2E] border-white text-white' : 'bg-[#EBF5FF] border-slate-900 text-slate-800'
+                    theme === 'dark' ? 'bg-[#131A2E] border-white/20 text-white' : 'bg-[#EBF5FF] border-slate-900 text-slate-800'
                   }`}>
                     <Shield size={10} />
                     <span>Sandbox</span>

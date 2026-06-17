@@ -547,7 +547,7 @@ export default function App() {
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className={`w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-[32px] p-6 relative flex flex-col gap-4 border-2 ${
                 theme === 'dark'
-                  ? 'bg-[#0B0F19] border-white text-white'
+                  ? 'bg-[#0B0F19] border-white/20 text-white'
                   : 'bg-white border-slate-900 text-slate-950'
               }`}
             >
@@ -555,7 +555,7 @@ export default function App() {
                 onClick={() => setShowTerms(false)}
                 className={`absolute right-4 top-4 w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${
                   theme === 'dark'
-                    ? 'bg-slate-950 border-white text-white hover:bg-slate-900'
+                    ? 'bg-slate-950 border-white/20 text-white hover:bg-slate-900'
                     : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
                 }`}
               >
@@ -584,7 +584,7 @@ export default function App() {
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className={`w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-[32px] p-6 relative flex flex-col gap-4 border-2 ${
                 theme === 'dark'
-                  ? 'bg-[#0B0F19] border-white text-white'
+                  ? 'bg-[#0B0F19] border-white/20 text-white'
                   : 'bg-white border-slate-900 text-slate-950'
               }`}
             >
@@ -592,7 +592,7 @@ export default function App() {
                 onClick={() => setShowPrivacy(false)}
                 className={`absolute right-4 top-4 w-7 h-7 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all ${
                   theme === 'dark'
-                    ? 'bg-slate-950 border-white text-white hover:bg-slate-900'
+                    ? 'bg-slate-950 border-white/20 text-white hover:bg-slate-900'
                     : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
                 }`}
               >

@@ -19,7 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className={`w-full px-5 py-4 border-b-2 flex items-center justify-between transition-all ${
       theme === 'dark' 
-        ? 'bg-[#0B0F19] border-white' 
+        ? 'bg-[#0B0F19] border-white/20' 
         : 'bg-white border-slate-900'
     }`} id="mpay-header">
       
@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
         className="flex items-center cursor-pointer select-none"
       >
         <div className={`px-2.5 h-9 rounded-xl bg-minipay-green flex items-center justify-center border-2 ${
-          theme === 'dark' ? 'border-white' : 'border-slate-900'
+          theme === 'dark' ? 'border-white/20' : 'border-slate-900'
         }`}>
           <span className="font-display font-extrabold text-lg text-white tracking-tight">Mpay</span>
         </div>
@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
           className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all cursor-pointer ${
             theme === 'dark' 
-              ? 'bg-[#131A2E] border-white hover:bg-slate-800 text-yellow-400' 
+              ? 'bg-[#131A2E] border-white/20 hover:bg-slate-800 text-yellow-400' 
               : 'bg-white border-slate-900 hover:bg-gray-100 text-slate-800'
           }`}
           title="Toggle color theme"
@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
           className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all cursor-pointer ${
             theme === 'dark' 
-              ? 'bg-[#131A2E] border-white hover:bg-slate-800 text-gray-300' 
+              ? 'bg-[#131A2E] border-white/20 hover:bg-slate-800 text-gray-300' 
               : 'bg-white border-slate-900 hover:bg-gray-100 text-slate-800'
           }`}
           title={isMuted ? "Unmute system" : "Mute system"}

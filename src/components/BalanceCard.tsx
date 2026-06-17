@@ -95,7 +95,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       {/* Primary Integrated Balance Card (USDT UP, WALLET DOWN, Sleek & Compact) */}
       <div className={`relative w-full rounded-[24px] p-5 transition-all border-2 ${
         theme === 'dark' 
-          ? 'bg-[#131A2E] border-white' 
+          ? 'bg-[#131A2E] border-white/20' 
           : 'bg-white border-slate-900'
       }`}>
         
@@ -122,7 +122,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             onClick={handleRefresh}
             className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border-2 ${
               theme === 'dark' 
-                ? 'bg-slate-950 border-white text-white hover:bg-slate-800' 
+                ? 'bg-slate-950 border-white/20 text-white hover:bg-slate-800' 
                 : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-100'
             }`}
             title="Update balance info"
@@ -150,7 +150,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           </span>
           <span className={`ml-2.5 font-mono text-[8px] sm:text-[9px] font-black text-white bg-minipay-green border-2 px-2 py-0.5 rounded-full uppercase tracking-wider ${
             theme === 'dark' 
-              ? 'border-white' 
+              ? 'border-white/20' 
               : 'border-slate-900'
           }`}>
             USDT
@@ -170,7 +170,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             {address ? (
               <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border-2 font-mono text-xs font-black ${
                 theme === 'dark' 
-                  ? 'bg-slate-950 border-white text-white' 
+                  ? 'bg-slate-950 border-white/20 text-white' 
                   : 'bg-white border-slate-900 text-slate-950'
               }`}>
                 <span>{formatAddress(address)}</span>
@@ -213,7 +213,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               }}
               className={`px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold tracking-wider uppercase border-2 transition-all flex items-center gap-1 cursor-pointer ${
                 theme === 'dark'
-                  ? 'bg-slate-950 border-white text-white hover:bg-gray-800'
+                  ? 'bg-slate-950 border-white/20 text-white hover:bg-gray-800'
                   : 'bg-white border-slate-900 text-slate-950 hover:bg-gray-50'
               }`}
             >
@@ -230,7 +230,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   transition={{ type: "spring", stiffness: 450, damping: 25 }}
                   className={`absolute right-0 mt-1 border-2 rounded-xl py-1 z-50 min-w-[110px] font-mono text-xs ${
                     theme === 'dark'
-                      ? 'bg-[#131A2E] border-white text-white'
+                      ? 'bg-[#131A2E] border-white/20 text-white'
                       : 'bg-white border-slate-900 text-slate-950'
                   }`}
                 >
@@ -282,7 +282,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               {/* Mini Faucet Strip */}
               <div className={`w-full flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all ${
                 theme === 'dark'
-                  ? 'bg-[#131A2E] border-white'
+                  ? 'bg-[#131A2E] border-white/20'
                   : 'bg-white border-slate-900'
               }`}>
               <div className="flex flex-col gap-0.5">
@@ -309,7 +309,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 disabled={claiming}
                 className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
                   theme === 'dark' 
-                    ? 'border-white hover:bg-minipay-green-hover'
+                    ? 'border-white/20 hover:bg-minipay-green-hover'
                     : 'border-slate-900 hover:bg-minipay-green-hover'
                 } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
               >
