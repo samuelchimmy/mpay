@@ -1,0 +1,6 @@
+{
+  "name": "mPay",
+  "description": "A beautifully polished MiniPay mini-app for sending USDT on Celo with interactive sounds, fluid slide-to-send validation, and dual-mode real/sandbox support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
