@@ -19,22 +19,29 @@ import {
   encodeERC20Transfer,
   getNativeCeloBalance,
   getUsdtBalance,
-  USDT_ADDRESSES
+  getCusdBalance,
+  USDT_ADDRESSES,
+  CUSD_ADDRESSES
 } from './utils/ethereum';
 import { ArrowRight, Check, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   // --- Core States ---
-  // Default values used when wallet is not connected or in sandbox demo mode
+  // Default values used when wallet is not connected
   const [balance, setBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_usdt_balance');
-    return saved ? parseFloat(saved) : 100.00;
+    return saved ? parseFloat(saved) : 0.00;
+  });
+  
+  const [cusdBalance, setCusdBalance] = useState<number>(() => {
+    const saved = localStorage.getItem('mpay_cusd_balance');
+    return saved ? parseFloat(saved) : 0.00;
   });
   
   const [celoBalance, setCeloBalance] = useState<number>(() => {
     const saved = localStorage.getItem('mpay_celo_balance');
-    return saved ? parseFloat(saved) : 5.00;
+    return saved ? parseFloat(saved) : 0.00;
   });
 
   const theme = 'light' as 'light' | 'dark';
@@ -55,8 +62,9 @@ export default function App() {
       address: null,
       network: 'mainnet', // Default to mainnet as requested
       usdtBalance: 0,
+      cusdBalance: 0,
       celoBalance: 0,
-      isSandbox: true, // Sandbox mode enabled by default until a client connects
+      isSandbox: false, // Sandbox mode disabled completely
       status: 'disconnected'
     };
   });
@@ -82,6 +90,10 @@ export default function App() {
   }, [balance]);
 
   useEffect(() => {
+    localStorage.setItem('mpay_cusd_balance', cusdBalance.toString());
+  }, [cusdBalance]);
+
+  useEffect(() => {
     localStorage.setItem('mpay_celo_balance', celoBalance.toString());
   }, [celoBalance]);
 
@@ -96,26 +108,32 @@ export default function App() {
 
 
   // Dynamic balance fetcher from Celo RPC
-  const fetchLiveBalances = async (addr: string, net: NetworkType, force: boolean = false) => {
-    const currentWallet = walletRef.current;
-    if (currentWallet.isSandbox && !force) {
-      return;
-    }
+  const fetchLiveBalances = async (addr: string, net: NetworkType) => {
     try {
       const uBal = await getUsdtBalance(addr, net);
+      const cUSDBal = await getCusdBalance(addr, net);
       const cBal = await getNativeCeloBalance(addr, net);
+      
       setBalance(uBal);
+      setCusdBalance(cUSDBal);
       setCeloBalance(cBal);
+
+      setWallet(prev => ({
+        ...prev,
+        usdtBalance: uBal,
+        cusdBalance: cUSDBal,
+        celoBalance: cBal,
+        status: 'connected'
+      }));
     } catch (e) {
       console.error("Failed to query Celo ERC-20 token contract balances", e);
     }
   };
 
-  // Attempt auto-connecting real wallet if injected, automatically toggling sandbox
+  // Attempt auto-connecting real wallet if injected
   useEffect(() => {
     const initWeb3Check = async () => {
       const eth = await getInjectedEthereum();
-      const defaultAddr = "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d";
       
       if (eth) {
         const addr = await getConnectedAddress();
@@ -127,35 +145,38 @@ export default function App() {
             isSandbox: false,
             status: 'connected',
             usdtBalance: 0,
+            cusdBalance: 0,
             celoBalance: 0
           });
           // Load real live connected wallet balances
           await fetchLiveBalances(addr, net);
         } else {
-          // Preset clean sandbox configuration for demo context
           setWallet({
-            address: defaultAddr, // Demo tag
+            address: null,
             network: 'mainnet',
-            isSandbox: true,
-            status: 'connected',
-            usdtBalance: 100,
-            celoBalance: 5
+            isSandbox: false,
+            status: 'disconnected',
+            usdtBalance: 0,
+            cusdBalance: 0,
+            celoBalance: 0
           });
-          setBalance(100.00);
-          setCeloBalance(5.00);
+          setBalance(0.00);
+          setCusdBalance(0.00);
+          setCeloBalance(0.00);
         }
       } else {
-        // Fallback clean sandbox configurations
         setWallet({
-          address: defaultAddr,
+          address: null,
           network: 'mainnet',
-          isSandbox: true,
-          status: 'connected',
-          usdtBalance: 100,
-          celoBalance: 5
+          isSandbox: false,
+          status: 'disconnected',
+          usdtBalance: 0,
+          cusdBalance: 0,
+          celoBalance: 0
         });
-        setBalance(100.00);
-        setCeloBalance(5.00);
+        setBalance(0.00);
+        setCusdBalance(0.00);
+        setCeloBalance(0.00);
       }
     };
     initWeb3Check();
@@ -193,24 +214,28 @@ export default function App() {
       sound.play('confirm');
     } else {
       setWallet({
-        address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
+        address: null,
         network: 'mainnet',
-        isSandbox: true,
-        status: 'connected',
-        usdtBalance: 100,
-        celoBalance: 5
+        isSandbox: false,
+        status: 'disconnected',
+        usdtBalance: 0,
+        cusdBalance: 0,
+        celoBalance: 0
       });
+      setBalance(0.00);
+      setCusdBalance(0.00);
+      setCeloBalance(0.00);
     }
   };
 
   const handleChainChanged = async (chainIdHex: string) => {
-    const net: NetworkType = chainIdHex === '0xaef3' ? 'testnet' : 'mainnet';
+    const net: NetworkType = (chainIdHex === '0xaef3' || chainIdHex === '44787') ? 'testnet' : 'mainnet';
     setWallet(prev => ({
       ...prev,
       network: net
     }));
     const currentWallet = walletRef.current;
-    if (currentWallet.address && !currentWallet.isSandbox) {
+    if (currentWallet.address) {
       await fetchLiveBalances(currentWallet.address, net);
     }
     sound.play('woosh');
@@ -220,27 +245,6 @@ export default function App() {
   const handleToggleMute = () => {
     const nextMute = sound.toggleMute();
     setIsMuted(nextMute);
-  };
-
-
-
-  const handleToggleSandbox = () => {
-    setWallet(prev => {
-      const nextSandbox = !prev.isSandbox;
-      let nextAddress = nextSandbox ? "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d" : prev.address;
-      let nextStatus = nextSandbox ? 'connected' : prev.status;
-      
-      if (!nextSandbox) {
-        setTimeout(() => connectWeb3Wallet(), 150);
-      }
-
-      return {
-        ...prev,
-        isSandbox: nextSandbox,
-        address: nextAddress,
-        status: nextStatus as any
-      };
-    });
   };
 
   const connectWeb3Wallet = async () => {
@@ -254,32 +258,29 @@ export default function App() {
         isSandbox: false,
         status: 'connected',
         usdtBalance: 0,
+        cusdBalance: 0,
         celoBalance: 0
       });
       await fetchLiveBalances(addr, net);
       sound.play('success');
     } else {
       setWallet({
-        address: "0x8979c5503B1a0594197d1d1d1d1d1d1d1d1d1d1d1d",
+        address: null,
         network: 'mainnet',
-        isSandbox: true,
-        status: 'connected',
-        usdtBalance: 100,
-        celoBalance: 5
+        isSandbox: false,
+        status: 'disconnected',
+        usdtBalance: 0,
+        cusdBalance: 0,
+        celoBalance: 0
       });
+      setBalance(0.00);
+      setCusdBalance(0.00);
+      setCeloBalance(0.00);
       sound.play('error');
     }
   };
 
   const handleSwitchNetwork = async (network: NetworkType) => {
-    if (wallet.isSandbox) {
-      setWallet(prev => ({ ...prev, network }));
-      if (wallet.address) {
-        await fetchLiveBalances(wallet.address, network);
-      }
-      return;
-    }
-
     const ok = await switchOrAddCeloNetwork(network);
     if (ok) {
       setWallet(prev => ({ ...prev, network }));
@@ -290,18 +291,17 @@ export default function App() {
   };
 
   const handleFaucetClaim = async () => {
-    if (wallet.isSandbox) {
-      setBalance(prev => prev + 100.00);
-      setCeloBalance(prev => prev + 0.5);
+    // Open testing stable coin faucet for Alfajores or Mento Swap
+    if (wallet.network === 'testnet') {
+      window.open("https://faucet.celo.org/alfajores", "_blank");
     } else {
-      // Direct users to Mento Swap to get testnet USDT
       window.open("https://app.mento.org/", "_blank");
     }
   };
 
   const handleRefreshBalances = async () => {
     sound.play('click');
-    if (wallet.address && !wallet.isSandbox) {
+    if (wallet.address) {
       await fetchLiveBalances(wallet.address, wallet.network);
     }
   };
@@ -311,34 +311,6 @@ export default function App() {
   };
 
   const handleSendTransaction = async (recipientAddress: string, amount: number, moniTag: string): Promise<boolean> => {
-    if (wallet.isSandbox) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          setBalance(prev => Math.max(0, prev - amount));
-          setCeloBalance(prev => Math.max(0.0001, prev - 0.002));
-
-          const rHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-          
-          const newTx: Transaction = {
-            id: `tx-${Date.now()}`,
-            recipientAddress,
-            recipientName: recipientAddress,
-            moniTag: recipientAddress,
-            amount,
-            timestamp: new Date().toISOString(),
-            status: 'success',
-            txHash: rHash,
-            network: wallet.network,
-            isSimulated: true
-          };
-
-          setTransactions(prev => [newTx, ...prev]);
-          setLastSentTx({ amount, nameOrTag: recipientAddress });
-          resolve(true);
-        }, 1500);
-      });
-    }
-
     // Real Celo onchain transaction execution
     const eth = await getInjectedEthereum();
     if (!eth || !wallet.address) {
@@ -346,15 +318,24 @@ export default function App() {
     }
 
     try {
-      const usdtContractAddress = wallet.network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
-      const decimals = wallet.network === 'mainnet' ? 6 : 18;
+      // Intelligently select token based on current balances (prefer cUSD if USDT balance is zero/insufficient)
+      const useCusd = wallet.cusdBalance >= amount && wallet.usdtBalance < amount;
+      
+      const contractAddress = useCusd
+        ? (wallet.network === 'mainnet' ? CUSD_ADDRESSES.mainnet : CUSD_ADDRESSES.testnet)
+        : (wallet.network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet);
+        
+      const decimals = useCusd
+        ? 18
+        : (wallet.network === 'mainnet' ? 6 : 18);
+        
       const dataPayload = encodeERC20Transfer(recipientAddress, amount, decimals);
 
       const txHash = await eth.request({
         method: 'eth_sendTransaction',
         params: [{
           from: wallet.address,
-          to: usdtContractAddress,
+          to: contractAddress,
           data: dataPayload,
           gas: '0x2625a0',
         }]
@@ -414,21 +395,20 @@ export default function App() {
           {/* Native/Stable Balance details */}
           <BalanceCard 
             usdtBalance={balance}
+            cusdBalance={cusdBalance}
             celoBalance={celoBalance}
             network={wallet.network}
-            isSandbox={wallet.isSandbox}
             address={wallet.address}
             theme={theme}
             onFaucetClaim={handleFaucetClaim}
             onRefreshBalances={handleRefreshBalances}
-            onToggleSandbox={handleToggleSandbox}
             onSwitchNetwork={handleSwitchNetwork}
             onConnect={connectWeb3Wallet}
           />
 
           {/* Secure Transfer engine inputs */}
           <SendForm 
-            balance={balance}
+            balance={balance + cusdBalance}
             theme={theme}
             onSend={handleSendTransaction}
           />

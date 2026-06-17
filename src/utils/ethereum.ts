@@ -3,8 +3,10 @@ import { providers, Contract, utils } from 'ethers';
 
 // Celo Mainnet: 42220 (0xa4ec)
 // Celo Alfajores Testnet: 44787 (0xaef3)
-export const CELO_MAINNET_CHAIN_ID = '0xa4ec';
-export const CELO_ALFAJORES_CHAIN_ID = '0xaef3';
+export const CELO_MAINNET_CHAIN_ID_HEX = '0xa4ec';
+export const CELO_MAINNET_CHAIN_ID_DEC = '42220';
+export const CELO_ALFAJORES_CHAIN_ID_HEX = '0xaef3';
+export const CELO_ALFAJORES_CHAIN_ID_DEC = '44787';
 
 export const RPC_URLS = {
   mainnet: 'https://forno.celo.org',
@@ -15,6 +17,12 @@ export const RPC_URLS = {
 export const USDT_ADDRESSES = {
   mainnet: '0x48065fbBE25f71C92829939886a3623D3F14E156',
   testnet: '0x624923e5957e627471659D1872179E735522e97A' // Celo Alfajores Mento-compatible Testnet USDT
+};
+
+// Native cUSD Celo ERC-20 Token Addresses
+export const CUSD_ADDRESSES = {
+  mainnet: '0x765DE816845861e75A25fCA122bb6898B8B1282a',
+  testnet: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1'
 };
 
 /**
@@ -78,7 +86,13 @@ export async function getWalletNetwork(): Promise<NetworkType> {
   
   try {
     const chainId = await eth.request({ method: 'eth_chainId' });
-    if (chainId === CELO_ALFAJORES_CHAIN_ID) {
+    const chainIdStr = String(chainId).toLowerCase();
+    if (
+      chainIdStr === CELO_ALFAJORES_CHAIN_ID_HEX || 
+      chainIdStr === CELO_ALFAJORES_CHAIN_ID_DEC ||
+      chainIdStr === '44787' ||
+      chainIdStr === '0x44787'
+    ) {
       return 'testnet';
     }
   } catch (e) {
@@ -91,6 +105,20 @@ export async function getWalletNetwork(): Promise<NetworkType> {
  * Queries native CELO balance of an address on-chain.
  */
 export async function getNativeCeloBalance(address: string, network: NetworkType = 'mainnet'): Promise<number> {
+  const eth = await getInjectedEthereum();
+  
+  // 1. Prioritize Web3Provider from injected wallet (highly reliable, no public rate-limits)
+  if (eth) {
+    try {
+      const provider = new providers.Web3Provider(eth);
+      const rawBal = await provider.getBalance(address);
+      return parseFloat(utils.formatEther(rawBal));
+    } catch (e) {
+      console.warn("Web3Provider failed to fetch CELO balance, falling back to public RPC", e);
+    }
+  }
+
+  // 2. Fallback to public RPC
   const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
   try {
     const provider = new providers.JsonRpcProvider(rpcUrl);
@@ -98,45 +126,31 @@ export async function getNativeCeloBalance(address: string, network: NetworkType
     return parseFloat(utils.formatEther(rawBal));
   } catch (e) {
     console.error("Failed to fetch CELO balance from public RPC", e);
-    const eth = await getInjectedEthereum();
-    if (eth) {
-      try {
-        const rawBalHex = await eth.request({
-          method: 'eth_getBalance',
-          params: [address, 'latest']
-        });
-        if (rawBalHex) {
-          const wei = parseInt(rawBalHex, 16);
-          return isNaN(wei) ? 0 : wei / 1e18;
-        }
-      } catch (innerErr) {
-        console.error("Injected wallet fallback fetch CELO balance also failed", innerErr);
-      }
-    }
   }
   return 0;
 }
 
 /**
- * Queries USDT balance of an address on-chain.
+ * Queries cUSD balance of an address on-chain.
  */
-export async function getUsdtBalance(address: string, network: NetworkType): Promise<number> {
-  const tokenContract = network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
-  const decimals = network === 'mainnet' ? 6 : 18;
-  const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
-  try {
-    const provider = new providers.JsonRpcProvider(rpcUrl);
-    const contract = new Contract(
-      tokenContract,
-      ['function balanceOf(address) view returns (uint256)'],
-      provider
-    );
-    const rawBal = await contract.balanceOf(address);
-    return Number(rawBal) / Math.pow(10, decimals);
-  } catch (e) {
-    console.error("Failed to fetch USDT balance from public RPC", e);
-    const eth = await getInjectedEthereum();
-    if (eth) {
+export async function getCusdBalance(address: string, network: NetworkType): Promise<number> {
+  const tokenContract = network === 'mainnet' ? CUSD_ADDRESSES.mainnet : CUSD_ADDRESSES.testnet;
+  const decimals = 18; // cUSD is always 18 decimals
+  const eth = await getInjectedEthereum();
+
+  // 1. Prioritize Web3Provider from injected wallet
+  if (eth) {
+    try {
+      const provider = new providers.Web3Provider(eth);
+      const contract = new Contract(
+        tokenContract,
+        ['function balanceOf(address) view returns (uint256)'],
+        provider
+      );
+      const rawBal = await contract.balanceOf(address);
+      return Number(utils.formatEther(rawBal));
+    } catch (e) {
+      console.warn("Web3Provider failed to fetch cUSD balance, trying legacy eth_call", e);
       const cleanAddr = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
       const data = '0x70a08231' + cleanAddr;
       try {
@@ -155,9 +169,85 @@ export async function getUsdtBalance(address: string, network: NetworkType): Pro
           return Number(rawInt) / Math.pow(10, decimals);
         }
       } catch (innerErr) {
-        console.error("Injected wallet fallback fetch USDT balance also failed", innerErr);
+        console.error("Legacy cUSD eth_call failed too", innerErr);
       }
     }
+  }
+
+  // 2. Fallback to public RPC
+  const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
+  try {
+    const provider = new providers.JsonRpcProvider(rpcUrl);
+    const contract = new Contract(
+      tokenContract,
+      ['function balanceOf(address) view returns (uint256)'],
+      provider
+    );
+    const rawBal = await contract.balanceOf(address);
+    return Number(utils.formatEther(rawBal));
+  } catch (e) {
+    console.error("Failed to fetch cUSD balance from public RPC", e);
+  }
+  return 0;
+}
+
+/**
+ * Queries USDT balance of an address on-chain.
+ */
+export async function getUsdtBalance(address: string, network: NetworkType): Promise<number> {
+  const tokenContract = network === 'mainnet' ? USDT_ADDRESSES.mainnet : USDT_ADDRESSES.testnet;
+  const decimals = network === 'mainnet' ? 6 : 18;
+  const eth = await getInjectedEthereum();
+
+  // 1. Prioritize Web3Provider from injected wallet
+  if (eth) {
+    try {
+      const provider = new providers.Web3Provider(eth);
+      const contract = new Contract(
+        tokenContract,
+        ['function balanceOf(address) view returns (uint256)'],
+        provider
+      );
+      const rawBal = await contract.balanceOf(address);
+      return Number(rawBal) / Math.pow(10, decimals);
+    } catch (e) {
+      console.warn("Web3Provider failed to fetch USDT balance, trying legacy eth_call", e);
+      const cleanAddr = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+      const data = '0x70a08231' + cleanAddr;
+      try {
+        const balanceHex = await eth.request({
+          method: 'eth_call',
+          params: [
+            {
+              to: tokenContract,
+              data: data
+            },
+            'latest'
+          ]
+        });
+        if (balanceHex && balanceHex !== '0x') {
+          const rawInt = BigInt(balanceHex);
+          return Number(rawInt) / Math.pow(10, decimals);
+        }
+      } catch (innerErr) {
+        console.error("Legacy USDT eth_call failed too", innerErr);
+      }
+    }
+  }
+
+  // 2. Fallback to public RPC
+  const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
+  try {
+    const provider = new providers.JsonRpcProvider(rpcUrl);
+    const contract = new Contract(
+      tokenContract,
+      ['function balanceOf(address) view returns (uint256)'],
+      provider
+    );
+    const rawBal = await contract.balanceOf(address);
+    return Number(rawBal) / Math.pow(10, decimals);
+  } catch (e) {
+    console.error("Failed to fetch USDT balance from public RPC", e);
   }
   return 0;
 }
@@ -169,7 +259,7 @@ export async function switchOrAddCeloNetwork(network: NetworkType): Promise<bool
   const eth = await getInjectedEthereum();
   if (!eth) return false;
   
-  const targetChainId = network === 'mainnet' ? CELO_MAINNET_CHAIN_ID : CELO_ALFAJORES_CHAIN_ID;
+  const targetChainId = network === 'mainnet' ? CELO_MAINNET_CHAIN_ID_HEX : CELO_ALFAJORES_CHAIN_ID_HEX;
   const targetName = network === 'mainnet' ? 'Celo Mainnet' : 'Celo Alfajores Testnet';
   const rpcUrls = network === 'mainnet' ? ['https://forno.celo.org'] : ['https://alfajores-forno.celo-testnet.org'];
   const blockExplorerUrls = network === 'mainnet' ? ['https://celoscan.io'] : ['https://alfajores.celoscan.io'];
@@ -184,7 +274,7 @@ export async function switchOrAddCeloNetwork(network: NetworkType): Promise<bool
     return true;
   } catch (switchError: any) {
     // Error code 4902 indicates chain hasn't been added
-    if (switchError.code === 4902) {
+    if (switchError.code === 4902 || switchError.code === -32603) {
       try {
         await eth.request({
           method: 'wallet_addEthereumChain',

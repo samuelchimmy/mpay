@@ -30,7 +30,8 @@ export interface WalletState {
   address: string | null;
   network: NetworkType;
   usdtBalance: number;
+  cusdBalance: number;
   celoBalance: number;
-  isSandbox: boolean; // Enables mock transactions for desktop reviewers without MiniPay installed
+  isSandbox: boolean; // Keep for interface compatibility if needed, but set to false
   status: 'disconnected' | 'connecting' | 'connected';
 }

@@ -7,28 +7,26 @@ import { getSwapQuote, executeCeloToUsdtSwap } from '../utils/mentoSwap';
 
 interface BalanceCardProps {
   usdtBalance: number;
+  cusdBalance: number;
   celoBalance: number;
   network: NetworkType;
-  isSandbox: boolean;
   address: string | null;
   theme: 'light' | 'dark';
   onFaucetClaim: () => void;
   onRefreshBalances: () => void;
-  onToggleSandbox: () => void;
   onSwitchNetwork: (network: NetworkType) => void;
   onConnect: () => void;
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
   usdtBalance,
+  cusdBalance,
   celoBalance,
   network,
-  isSandbox,
   address,
   theme,
   onFaucetClaim,
   onRefreshBalances,
-  onToggleSandbox,
   onSwitchNetwork,
   onConnect
 }) => {
@@ -45,7 +43,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const [swapError, setSwapError] = useState('');
 
   useEffect(() => {
-    if (!showSwap || isSandbox || !swapAmount) return;
+    if (!showSwap || !swapAmount) return;
     
     // Debounce quote fetching
     const timer = setTimeout(async () => {
@@ -62,7 +60,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [swapAmount, showSwap, isSandbox, network]);
+  }, [swapAmount, showSwap, network]);
 
   const handleExecuteSwap = async () => {
     if (!swapAmount || isNaN(parseFloat(swapAmount))) return;
@@ -119,7 +117,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   };
 
   // Dynamically calculate font sizing based on digits to prevent layout overflow
-  const wholePart = formatUSDT(usdtBalance).split('.')[0];
+  const stableBalance = usdtBalance + cusdBalance;
+  const wholePart = formatUSDT(stableBalance).split('.')[0];
+  const decimalPart = formatUSDT(stableBalance).split('.')[1];
   const digitsCount = wholePart.length;
 
   let sizeClass = "text-3xl"; // default compact style
@@ -158,7 +158,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <span className={`font-mono text-[9px] font-black uppercase tracking-wider ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              USDT Balance
+              Stable Balance
             </span>
           </div>
 
@@ -193,14 +193,25 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           <span className={`font-display font-extrabold ${decimalsSizeClass} ${
             theme === 'dark' ? 'text-gray-300' : 'text-slate-500'
           }`}>
-            .{formatUSDT(usdtBalance).split('.')[1]}
+            .{decimalPart}
           </span>
           <span className={`ml-2.5 font-mono text-[8px] sm:text-[9px] font-black text-white bg-minipay-green border-2 px-2 py-0.5 rounded-full uppercase tracking-wider ${
             theme === 'dark' 
               ? 'border-white/20' 
               : 'border-slate-900'
           }`}>
-            USDT
+            USD
+          </span>
+        </div>
+
+        {/* Stablecoin breakdown info bar */}
+        <div className="mt-1.5 flex items-center gap-1.5 relative z-10 select-none">
+          <span className="font-mono text-[9px] font-black text-slate-500 uppercase tracking-wide">
+            USDT: ${formatUSDT(usdtBalance)}
+          </span>
+          <span className="font-mono text-[9px] font-bold text-slate-300">•</span>
+          <span className="font-mono text-[9px] font-black text-slate-500 uppercase tracking-wide">
+            cUSD: ${formatUSDT(cusdBalance)}
           </span>
         </div>
 
@@ -338,13 +349,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   <span className={`font-display font-black text-xs tracking-tight ${
                     theme === 'dark' ? 'text-white' : 'text-slate-950'
                   }`}>
-                    {isSandbox ? "Faucet stable top-up" : "Get Testnet USDT"}
+                    Get Testnet USDT / cUSD
                   </span>
                 </div>
                 <span className={`text-[10px] font-mono leading-tight ${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-500 font-medium'
                 }`}>
-                  {isSandbox ? "Instantly request simulated $100.00." : "Swap CELO to USDT via Mento."}
+                  Swap CELO to USDT/cUSD via Mento.
                 </span>
               </div>
 
@@ -353,12 +364,8 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 whileTap={{ scale: claiming ? 1.0 : 0.96 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 onClick={() => {
-                  if (isSandbox) {
-                    handleClaim();
-                  } else {
-                    sound.play('click');
-                    setShowSwap(!showSwap);
-                  }
+                  sound.play('click');
+                  setShowSwap(!showSwap);
                 }}
                 disabled={claiming}
                 className={`px-3 py-1.5 rounded-xl bg-minipay-green text-white font-display font-black text-[11px] flex items-center gap-1 transition-all cursor-pointer border-2 ${
@@ -368,12 +375,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 } ${claiming ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <PlusCircle size={11} />
-                <span>{isSandbox ? (claiming ? "Topping..." : "Request $100") : (showSwap ? "Cancel" : "Mento Swap")}</span>
+                <span>{showSwap ? "Cancel" : "Mento Swap"}</span>
               </motion.button>
             </div>
             
             <AnimatePresence>
-              {showSwap && !isSandbox && (
+              {showSwap && (
                 <motion.div
                   initial={{ opacity: 0, height: 0, y: -10 }}
                   animate={{ opacity: 1, height: 'auto', y: 0 }}
