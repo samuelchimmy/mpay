@@ -185,10 +185,14 @@ export async function getUsdtBalance(address: string, network: NetworkType): Pro
     }
   }
 
-  // Inject local persistent offset for realistic simulated swap credits mapping
-  const key = `mpay_${network}_usdt_credit_${address.toLowerCase()}`;
-  const cred = parseFloat(localStorage.getItem(key) || '0');
-  return onchainBal + cred;
+  // Inject local persistent offset on testnet for realistic simulated swap credits mapping
+  if (network === 'testnet') {
+     const key = `mpay_testnet_usdt_credit_${address.toLowerCase()}`;
+     const cred = parseFloat(localStorage.getItem(key) || '0');
+     return onchainBal + cred;
+  }
+
+  return onchainBal;
 }
 
 /**

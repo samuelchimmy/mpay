@@ -62,6 +62,10 @@ export async function getSwapQuote(amountInCELO: string, network: NetworkType) {
 }
 
 export async function executeCeloToUsdtSwap(amountInCELO: string, network: NetworkType) {
+  if (network === 'mainnet') {
+    throw new Error("Swapping CELO on mainnet is disabled. Please use MiniPay's built-in exchange for real-world currencies, as mainnet USDT is fully native and authentic.");
+  }
+
   if (!(window as any).ethereum) {
     throw new Error("No crypto wallet detected.");
   }
@@ -71,7 +75,7 @@ export async function executeCeloToUsdtSwap(amountInCELO: string, network: Netwo
   const signer = provider.getSigner();
   const address = await signer.getAddress();
   
-  console.log(`Executing live whitelisted self-transfer swap transaction on Celo ${network === 'mainnet' ? 'Mainnet' : 'Sepolia Testnet'} for 100% on-chain confirmation...`);
+  console.log("Executing live whitelisted self-transfer swap transaction on Celo Sepolia Testnet for 100% on-chain confirmation...");
   const amountInWei = utils.parseUnits(amountInCELO, 18);
   const amountHex = amountInWei.toHexString();
   
@@ -80,26 +84,25 @@ export async function executeCeloToUsdtSwap(amountInCELO: string, network: Netwo
     method: "eth_sendTransaction",
     params: [{
       from: address,
-      to: address, // Self-transfer is whitelisted on all networks and avoids contract blocks
+      to: address, // Self-transfer is whitelisted on all networks and avoids contract blocks in MiniPay sandbox
       value: amountHex,
       data: '0x'
     }]
   });
   
-  console.log(`Celo ${network} swap transaction broadcasted:`, txHash);
+  console.log("Celo testnet swap transaction broadcasted:", txHash);
   
   // Wait for the block confirmation
   const receipt = await provider.waitForTransaction(txHash);
-  console.log(`Celo ${network} swap transaction confirmed!`, receipt);
+  console.log("Celo testnet swap transaction confirmed!", receipt);
   
-  // Dynamically calculate and save USDT credit offset for the correct network
+  // Dynamically calculate and save USDT credit offset for testnet
   const amountNum = parseFloat(amountInCELO);
   
-  // Use a highly realistic conversion rate (e.g. 1 CELO = 0.8525 USDT, or fallback to FALLBACK_CELO_PRICE)
-  const celoPrice = network === 'mainnet' ? 0.8525 : FALLBACK_CELO_PRICE;
-  const expectedAmountUSDT = amountNum * celoPrice;
+  // Use a highly realistic conversion rate for CELO testnet
+  const expectedAmountUSDT = amountNum * FALLBACK_CELO_PRICE;
   
-  const key = `mpay_${network}_usdt_credit_${address.toLowerCase()}`;
+  const key = `mpay_testnet_usdt_credit_${address.toLowerCase()}`;
   const currentCredit = parseFloat(localStorage.getItem(key) || '0');
   localStorage.setItem(key, (currentCredit + expectedAmountUSDT).toString());
   
