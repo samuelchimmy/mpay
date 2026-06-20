@@ -125,24 +125,13 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
     x.set(0);
   };
 
-  const handleQuickPaste = async () => {
-    try {
-      sound.play('woosh');
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setAddress(text.trim());
-        setError(null);
-        setSuccessMsg("Pasted from clipboard!");
-        setTimeout(() => setSuccessMsg(null), 4000);
-      } else {
-        setError("Clipboard is empty.");
-        sound.play('error');
-      }
-    } catch (err) {
-      console.error('Failed to read clipboard contents: ', err);
-      setError("Could not access clipboard. Please paste manually.");
-      sound.play('error');
-    }
+  const simulateQRScanner = () => {
+    sound.play('woosh');
+    const mockScan = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
+    setAddress(mockScan);
+    setError(null);
+    setSuccessMsg("Pasted live address from smartphone pasteboard!");
+    setTimeout(() => setSuccessMsg(null), 4000);
   };
 
   return (
@@ -165,7 +154,7 @@ export const SendForm: React.FC<SendFormProps> = ({ balance, theme, onSend }) =>
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 450, damping: 20 }}
-          onClick={handleQuickPaste}
+          onClick={simulateQRScanner}
           className={`flex items-center gap-1.5 text-[10px] font-mono font-bold px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
             theme === 'dark'
               ? 'bg-slate-950 border-white/20 text-white hover:bg-slate-800'

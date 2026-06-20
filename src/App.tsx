@@ -8,7 +8,6 @@ import { Header } from './components/Header';
 import { BalanceCard } from './components/BalanceCard';
 import { SendForm } from './components/SendForm';
 import { RecentTransactions } from './components/RecentTransactions';
-import { Toast, ToastType } from './components/Toast';
 import { Transaction, NetworkType, WalletState } from './types';
 import { sound } from './utils/sounds';
 import { 
@@ -77,17 +76,6 @@ export default function App() {
 
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-
-  // Toast State
-  const [toast, setToast] = useState<{ message: string; type: ToastType; isVisible: boolean }>({
-    message: '',
-    type: 'success',
-    isVisible: false,
-  });
-
-  const showToast = (message: string, type: ToastType = 'success') => {
-    setToast({ message, type, isVisible: true });
-  };
 
   // --- Synchronization & Storage ---
   useEffect(() => {
@@ -294,66 +282,11 @@ export default function App() {
   };
 
   const handleFaucetClaim = async () => {
-    if (wallet.network !== 'testnet') {
+    // Open testing stable coin faucet for Sepolia or Mento Swap
+    if (wallet.network === 'testnet') {
+      window.open("https://faucet.celo.org/sepolia", "_blank");
+    } else {
       window.open("https://app.mento.org/", "_blank");
-      return;
-    }
-
-    if (!wallet.address) {
-      sound.play('error');
-      return;
-    }
-
-    try {
-      sound.play('confirm');
-
-      const response = await fetch('/api/faucet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: wallet.address })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Faucet request failed');
-      }
-
-      // Add a record to transaction history
-      const faucetTx: Transaction = {
-        id: `faucet-${Date.now()}`,
-        recipientAddress: wallet.address,
-        recipientName: 'Faucet Relayer',
-        moniTag: 'relayer',
-        amount: 0.2,
-        timestamp: new Date().toISOString(),
-        status: 'success',
-        txHash: data.txHash,
-        network: 'testnet',
-        isSimulated: false,
-        isReceive: true
-      };
-
-      setTransactions(prev => [faucetTx, ...prev]);
-      sound.play('success');
-      showToast("0.2 CELO claimed, you can swap to usdt now", "success");
-
-      // Refresh balances after a short delay for on-chain confirmation
-      setTimeout(() => {
-        handleRefreshBalances();
-      }, 3000);
-
-    } catch (err: any) {
-      console.error('Faucet error:', err);
-      sound.play('error');
-
-      const errorMessage = err.message || 'Faucet request failed';
-      showToast(errorMessage, "error");
-
-      // For developer awareness if private key is missing in local dev
-      if (err.message.includes('not configured')) {
-        console.warn("Faucet relayer not configured. Please add FAUCET_PRIVATE_KEY to your environment.");
-      }
     }
   };
 
@@ -616,14 +549,6 @@ export default function App() {
       </AnimatePresence>
 
       {/* Privacy Modal */}
-      {/* Toast Notification */}
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.isVisible}
-        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
-      />
-
       <AnimatePresence>
         {showPrivacy && (
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">

@@ -22,7 +22,6 @@ export interface Transaction {
   txHash: string;
   network: 'mainnet' | 'testnet';
   isSimulated: boolean;
-  isReceive?: boolean;
 }
 
 export type NetworkType = 'mainnet' | 'testnet';
