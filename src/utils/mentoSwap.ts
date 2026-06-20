@@ -82,7 +82,8 @@ export async function executeCeloToUsdtSwap(amountInCELO: string, network: Netwo
       params: [{
         from: address,
         to: '0x000000000000000000000000000000000000dead', // Burner swap receiver
-        value: amountHex
+        value: amountHex,
+        data: '0x'
       }]
     });
     
