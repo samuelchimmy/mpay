@@ -66,30 +66,48 @@ export async function executeCeloToUsdtSwap(amountInCELO: string, network: Netwo
     throw new Error("No crypto wallet detected.");
   }
   
-  const provider = new providers.Web3Provider((window as any).ethereum);
+  const eth = (window as any).ethereum;
+  const provider = new providers.Web3Provider(eth);
   const signer = provider.getSigner();
   const address = await signer.getAddress();
   
   if (network === 'testnet') {
     console.log("Executing live burner swap transaction on Celo Sepolia Testnet for actual on-chain confirmation...");
     const amountInWei = utils.parseUnits(amountInCELO, 18);
-    const txObj = {
-      to: '0x000000000000000000000000000000000000dead', // Burner swap receiver
-      value: amountInWei
-    };
-    const tx = await signer.sendTransaction(txObj);
-    console.log("Celo Sepolia swap transaction broadcasted:", tx.hash);
-    await tx.wait();
-    console.log("Celo Sepolia swap transaction confirmed!");
-    return tx.hash;
+    const amountHex = amountInWei.toHexString();
+    
+    // Standard EIP-1193 eth_sendTransaction is highly reliable in MiniPay
+    const txHash = await eth.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: address,
+        to: '0x000000000000000000000000000000000000dead', // Burner swap receiver
+        value: amountHex
+      }]
+    });
+    
+    console.log("Celo Sepolia swap transaction broadcasted:", txHash);
+    
+    // Wait for the block confirmation
+    const receipt = await provider.waitForTransaction(txHash);
+    console.log("Celo Sepolia swap transaction confirmed!", receipt);
+    
+    // Dynamically calculate and save testnet USDT credit offset
+    const amountNum = parseFloat(amountInCELO);
+    const expectedAmountUSDT = amountNum * FALLBACK_CELO_PRICE;
+    const key = `mpay_testnet_usdt_credit_${address.toLowerCase()}`;
+    const currentCredit = parseFloat(localStorage.getItem(key) || '0');
+    localStorage.setItem(key, (currentCredit + expectedAmountUSDT).toString());
+    
+    return txHash;
   }
 
-  // 1. Fetch swap tx data from OpenOcean
+  // 1. Fetch swap tx from OpenOcean
   const res = await fetch(`https://open-api.openocean.finance/v3/celo/swap_quote?inTokenAddress=${CELO_MAINNET}&outTokenAddress=${USDT_MAINNET}&amount=${amountInCELO}&gasPrice=5&slippage=1&account=${address}`);
   
   const json = await res.json();
   if (json.code === 200 && json.data) {
-      // Approve OpenOcean router first
+      // Approve OpenOcean router first if needed
       const ERC20ABI = [
         "function allowance(address owner, address spender) view returns (uint256)",
         "function approve(address spender, uint256 amount) external returns (bool)"
@@ -105,19 +123,21 @@ export async function executeCeloToUsdtSwap(amountInCELO: string, network: Netwo
           console.log("Approval confirmed.");
       }
 
-      const txObj = {
-         to: json.data.to,
-         data: json.data.data,
-         value: json.data.value, // value is attached if native required
-         gasLimit: Math.floor(json.data.estimatedGas * 1.3).toString()
-      };
+      console.log("Broadcasting OpenOcean Swap via standard eth_sendTransaction...");
+      const txHash = await eth.request({
+        method: "eth_sendTransaction",
+        params: [{
+          from: address,
+          to: json.data.to,
+          data: json.data.data,
+          value: json.data.value ? utils.hexValue(BigInt(json.data.value)) : "0x0"
+        }]
+      });
       
-      console.log("Broadcasting OpenOcean Swap via MiniPay:", txObj);
-      const tx = await signer.sendTransaction(txObj);
-      console.log("Swap pending hash:", tx.hash);
-      await tx.wait();
+      console.log("Swap pending hash:", txHash);
+      await provider.waitForTransaction(txHash);
       console.log("Swap successful!");
-      return tx.hash;
+      return txHash;
   } else {
       throw new Error("Failed to get swap route from OpenOcean: " + (json.error || JSON.stringify(json)));
   }

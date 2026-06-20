@@ -132,6 +132,8 @@ export async function getUsdtBalance(address: string, network: NetworkType): Pro
   const decimals = network === 'mainnet' ? 6 : 6;
   const eth = await getInjectedEthereum();
 
+  let onchainBal = 0;
+
   // 1. Prioritize Web3Provider from injected wallet
   if (eth) {
     try {
@@ -142,7 +144,7 @@ export async function getUsdtBalance(address: string, network: NetworkType): Pro
         provider
       );
       const rawBal = await contract.balanceOf(address);
-      return Number(rawBal) / Math.pow(10, decimals);
+      onchainBal = Number(rawBal) / Math.pow(10, decimals);
     } catch (e) {
       console.warn("Web3Provider failed to fetch USDT balance, trying legacy eth_call", e);
       const cleanAddr = address.replace(/^0x/, '').toLowerCase().padStart(64, '0');
@@ -152,37 +154,45 @@ export async function getUsdtBalance(address: string, network: NetworkType): Pro
           method: 'eth_call',
           params: [
             {
-              to: tokenContract,
-              data: data
+               to: tokenContract,
+               data: data
             },
             'latest'
           ]
         });
         if (balanceHex && balanceHex !== '0x') {
           const rawInt = BigInt(balanceHex);
-          return Number(rawInt) / Math.pow(10, decimals);
+          onchainBal = Number(rawInt) / Math.pow(10, decimals);
         }
       } catch (innerErr) {
         console.error("Legacy USDT eth_call failed too", innerErr);
       }
     }
+  } else {
+    // 2. Fallback to public RPC
+    const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
+    try {
+      const provider = new providers.JsonRpcProvider(rpcUrl);
+      const contract = new Contract(
+        tokenContract,
+        ['function balanceOf(address) view returns (uint256)'],
+        provider
+      );
+      const rawBal = await contract.balanceOf(address);
+      onchainBal = Number(rawBal) / Math.pow(10, decimals);
+    } catch (e) {
+      console.error("Failed to fetch USDT balance from public RPC", e);
+    }
   }
 
-  // 2. Fallback to public RPC
-  const rpcUrl = RPC_URLS[network] || RPC_URLS.mainnet;
-  try {
-    const provider = new providers.JsonRpcProvider(rpcUrl);
-    const contract = new Contract(
-      tokenContract,
-      ['function balanceOf(address) view returns (uint256)'],
-      provider
-    );
-    const rawBal = await contract.balanceOf(address);
-    return Number(rawBal) / Math.pow(10, decimals);
-  } catch (e) {
-    console.error("Failed to fetch USDT balance from public RPC", e);
+  // Inject local persistent offset on testnet for realistic simulated swap credits mapping
+  if (network === 'testnet') {
+     const key = `mpay_testnet_usdt_credit_${address.toLowerCase()}`;
+     const cred = parseFloat(localStorage.getItem(key) || '0');
+     return onchainBal + cred;
   }
-  return 0;
+
+  return onchainBal;
 }
 
 /**
